@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chamada EBD</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card: #fff;
+    --border: #dde1e6;
+    --text: #212529;
+    --muted: #6c757d;
+    --primary: #0d6efd;
+    --success: #198754;
+    --danger: #dc3545;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 24px; }
+  .container { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin-bottom: 20px; color: var(--primary); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+  .card h2 { font-size: 1.1rem; margin-bottom: 12px; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+  .field { flex: 1; min-width: 180px; }
+  .field label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 4px; color: var(--muted); }
+  .field select, .field input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: left; font-size: .92rem; }
+  th { background: #f8f9fa; font-weight: 600; color: var(--muted); font-size: .8rem; text-transform: uppercase; }
+  .toggle { display: inline-flex; gap: 4px; }
+  .toggle button { padding: 6px 16px; border: 1px solid var(--border); border-radius: 20px; cursor: pointer; font-size: .85rem; background: #fff; transition: all .15s; }
+  .toggle button.active-presente { background: var(--success); color: #fff; border-color: var(--success); }
+  .toggle button.active-ausente { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .chk { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); }
+  .summary-row { background: #f0f4ff; font-weight: 600; }
+  .summary-row td { padding: 14px 8px; }
+  #visitantes-container { margin-top: 8px; }
+  #visitantes-container .visitante-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  #visitantes-container input { flex: 1; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; }
+  .btn { padding: 10px 24px; border: none; border-radius: 6px; font-size: .95rem; cursor: pointer; font-weight: 600; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: #0b5ed7; }
+  .btn-sm { padding: 4px 10px; font-size: .8rem; }
+  .text-right { text-align: right; }
+  .text-center { text-align: center; }
+  .mb-8 { margin-bottom: 8px; }
+  .mt-16 { margin-top: 16px; }
+  .alert { padding: 12px 16px; border-radius: 6px; margin-bottom: 12px; font-size: .9rem; }
+  .alert-info { background: #cff4fc; border: 1px solid #b6effb; }
+  .alert-success { background: #d1e7dd; border: 1px solid #badbcc; }
+  .alert-danger { background: #f8d7da; border: 1px solid #f5c2c7; }
+  #msg { display: none; }
+  .spacer { flex: 1; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📋 Chamada — Escola Bíblica Dominical</h1>
+
+  <div id="msg" class="alert"></div>
+
+  <!-- Filtros -->
+  <div class="card">
+    <div class="row">
+      <div class="field">
+        <label for="trimestreSelect">Trimestre</label>
+        <select id="trimestreSelect"><option value="">Carregando…</option></select>
+      </div>
+      <div class="field">
+        <label for="domingoSelect">Domingo</label>
+        <select id="domingoSelect"><option value="">Selecione um trimestre primeiro</option></select>
+      </div>
+      <div class="field">
+        <label for="turmaSelect">Classe</label>
+        <select id="turmaSelect"><option value="">Carregando…</option></select>
+      </div>
+      <div class="field" style="display:flex;align-items:flex-end;">
+        <button class="btn btn-primary" onclick="carregarPainel()">🔍 Abrir Chamada</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Painel da Chamada -->
+  <div id="painel" style="display:none;">
+    <div class="card">
+      <h2 id="painelTitulo">Chamada</h2>
+      <div id="infoDomingo" class="mb-8" style="color:var(--muted);font-size:.9rem;"></div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Aluno</th>
+            <th class="text-center">Presença</th>
+            <th class="text-center">Bíblia</th>
+            <th class="text-center">Revista</th>
+          </tr>
+        </thead>
+        <tbody id="alunosTbody"></tbody>
+        <tfoot>
+          <tr class="summary-row">
+            <td>Totais</td>
+            <td class="text-center" id="totalPresentes">—</td>
+            <td class="text-center" id="totalBiblias">—</td>
+            <td class="text-center" id="totalRevistas">—</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <!-- Visitantes -->
+      <div class="mt-16">
+        <h3 style="font-size:1rem;margin-bottom:8px;">👥 Visitantes</h3>
+        <div id="visitantes-container"></div>
+        <button class="btn btn-sm btn-primary" onclick="adicionarVisitante()" style="margin-top:6px;">+ Adicionar Visitante</button>
+      </div>
+    </div>
+
+    <!-- Fechamento -->
+    <div class="card">
+      <h2>📊 Fechamento do Domingo</h2>
+      <div class="row">
+        <div class="field">
+          <label>Matriculados</label>
+          <input type="number" id="fTotalMatriculados" value="0" min="0">
+        </div>
+        <div class="field">
+          <label>Presentes</label>
+          <input type="number" id="fTotalPresentes" value="0" min="0">
+        </div>
+        <div class="field">
+          <label>Visitantes</label>
+          <input type="number" id="fTotalVisitantes" value="0" min="0">
+        </div>
+        <div class="field">
+          <label>Ausentes</label>
+          <input type="number" id="fTotalAusentes" value="0" min="0">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Bíblias</label>
+          <input type="number" id="fTotalBiblias" value="0" min="0">
+        </div>
+        <div class="field">
+          <label>Revistas</label>
+          <input type="number" id="fTotalRevistas" value="0" min="0">
+        </div>
+        <div class="field">
+          <label>Ofertas (R$)</label>
+          <input type="number" id="fValorOfertas" value="0.00" min="0" step="0.01">
+        </div>
+        <div class="field"></div>
+      </div>
+      <div class="field mt-16">
+        <label>Observações</label>
+        <input type="text" id="fObservacoes" placeholder="Ex: Culto missionário, batismo…">
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="salvarChamada()" style="font-size:1rem;padding:12px 36px;">
+      💾 Salvar Chamada
+    </button>
+  </div>
+</div>
+
+<script>
+// ── Estado global ──
+let turmaId = null;
+let trimestreId = null;
+let domingoId = null;
+let painelData = null;
+
+// ── Inicialização ──
+document.addEventListener('DOMContentLoaded', () => {
+  carregarTrimestres();
+  carregarTurmas();
+});
+
+async function carregarTrimestres() {
+  const sel = document.getElementById('trimestreSelect');
+  try {
+    const resp = await fetch('/api/trimestres/');
+    const trimestres = await resp.json();
+    sel.innerHTML = '<option value="">Selecione…</option>';
+    trimestres.forEach(t => {
+      sel.innerHTML += `<option value="${t.id}">${t.ano} — ${t.numero}º Trim. (${t.data_inicio} a ${t.data_fim})</option>`;
+    });
+    // Se houver trimestre ativo, seleciona
+    const ativoResp = await fetch('/api/trimestres/ativo').catch(() => null);
+    if (ativoResp && ativoResp.ok) {
+      const ativo = await ativoResp.json();
+      sel.value = ativo.id;
+      carregarDomingos(ativo.id);
+    }
+  } catch (e) {
+    sel.innerHTML = '<option value="">Erro ao carregar</option>';
+  }
+}
+
+async function carregarTurmas() {
+  const sel = document.getElementById('turmaSelect');
+  try {
+    const resp = await fetch('/api/turmas/');
+    const turmas = await resp.json();
+    sel.innerHTML = '<option value="">Selecione…</option>';
+    turmas.forEach(t => {
+      sel.innerHTML += `<option value="${t.id}">${t.nome} (${t.faixa_etaria})</option>`;
+    });
+  } catch (e) {
+    sel.innerHTML = '<option value="">Erro ao carregar</option>';
+  }
+}
+
+document.getElementById('trimestreSelect').addEventListener('change', function() {
+  const tid = parseInt(this.value);
+  if (tid) carregarDomingos(tid);
+});
+
+async function carregarDomingos(trimestreIdParam) {
+  const sel = document.getElementById('domingoSelect');
+  sel.innerHTML = '<option value="">Carregando…</option>';
+  try {
+    const resp = await fetch(`/api/trimestres/${trimestreIdParam}/domingos`);
+    const domingos = await resp.json();
+    sel.innerHTML = '<option value="">Selecione…</option>';
+    domingos.forEach(d => {
+      const data = new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR');
+      sel.innerHTML += `<option value="${d.id}">${d.numero}º Domingo — ${data}</option>`;
+    });
+  } catch (e) {
+    sel.innerHTML = '<option value="">Erro ao carregar</option>';
+  }
+}
+
+// ── Carregar Painel ──
+async function carregarPainel() {
+  turmaId = parseInt(document.getElementById('turmaSelect').value);
+  trimestreId = parseInt(document.getElementById('trimestreSelect').value);
+  domingoId = parseInt(document.getElementById('domingoSelect').value);
+
+  if (!turmaId || !trimestreId || !domingoId) {
+    mostrarMsg('Selecione Classe, Trimestre e Domingo.', 'info');
+    return;
+  }
+
+  esconderMsg();
+  try {
+    const resp = await fetch(`/api/turmas/${turmaId}/painel?trimestre_id=${trimestreId}&domingo_id=${domingoId}`);
+    if (!resp.ok) throw new Error((await resp.json()).detail || 'Erro');
+    painelData = await resp.json();
+    renderizarPainel(painelData);
+  } catch (e) {
+    mostrarMsg('Erro: ' + e.message, 'danger');
+  }
+}
+
+function renderizarPainel(data) {
+  document.getElementById('painel').style.display = 'block';
+  document.getElementById('painelTitulo').textContent = `📋 ${data.turma.nome} — ${data.turma.faixa_etaria}`;
+  const domData = new Date(data.domingo.data + 'T00:00:00').toLocaleDateString('pt-BR');
+  document.getElementById('infoDomingo').textContent =
+    `${domData} — ${data.domingo.numero}º Domingo | Tema: ${data.domingo.tema_licao || '(não informado)'} | Trimestre: ${data.trimestre.ano}/${data.trimestre.numero}º`;
+
+  // Tabela de alunos
+  const tbody = document.getElementById('alunosTbody');
+  tbody.innerHTML = '';
+  data.alunos.forEach(a => {
+    const presente = a.presente === true;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${esc(a.nome)}</td>
+      <td class="text-center">
+        <div class="toggle">
+          <button class="${presente ? 'active-presente' : ''}" data-aluno="${a.aluno_id}" data-val="1" onclick="togglePresenca(this)">P</button>
+          <button class="${!presente ? 'active-ausente' : ''}" data-aluno="${a.aluno_id}" data-val="0" onclick="togglePresenca(this)">F</button>
+        </div>
+        <input type="hidden" id="presenca_${a.aluno_id}" value="${presente ? '1' : '0'}">
+      </td>
+      <td class="text-center"><input type="checkbox" class="chk" id="biblia_${a.aluno_id}" ${a.trouxe_biblia ? 'checked' : ''}></td>
+      <td class="text-center"><input type="checkbox" class="chk" id="revista_${a.aluno_id}" ${a.trouxe_revista ? 'checked' : ''}></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Visitantes existentes
+  const vContainer = document.getElementById('visitantes-container');
+  vContainer.innerHTML = '';
+  data.visitantes.forEach(v => {
+    vContainer.insertAdjacentHTML('beforeend', rowVisitante(v.nome, v.chamada_id));
+  });
+
+  // Fechamento
+  if (data.fechamento) {
+    document.getElementById('fTotalMatriculados').value = data.fechamento.total_matriculados;
+    document.getElementById('fTotalPresentes').value = data.fechamento.total_presentes;
+    document.getElementById('fTotalVisitantes').value = data.fechamento.total_visitantes;
+    document.getElementById('fTotalAusentes').value = data.fechamento.total_ausentes;
+    document.getElementById('fTotalBiblias').value = data.fechamento.total_biblias;
+    document.getElementById('fTotalRevistas').value = data.fechamento.total_revistas;
+    document.getElementById('fValorOfertas').value = data.fechamento.valor_ofertas;
+    document.getElementById('fObservacoes').value = data.fechamento.observacoes || '';
+  } else {
+    // Preenche contagens automáticas
+    const presentes = data.alunos.filter(a => a.presente === true).length;
+    document.getElementById('fTotalMatriculados').value = data.alunos.length;
+    document.getElementById('fTotalPresentes').value = presentes;
+    document.getElementById('fTotalAusentes').value = data.alunos.length - presentes;
+    document.getElementById('fTotalVisitantes').value = data.visitantes.filter(v => v.presente).length;
+    document.getElementById('fTotalBiblias').value = data.alunos.filter(a => a.trouxe_biblia).length;
+    document.getElementById('fTotalRevistas').value = data.alunos.filter(a => a.trouxe_revista).length;
+    document.getElementById('fValorOfertas').value = '0.00';
+    document.getElementById('fObservacoes').value = '';
+  }
+
+  atualizarTotais();
+}
+
+function togglePresenca(btn) {
+  const alunoId = btn.dataset.aluno;
+  const isPresente = btn.dataset.val === '1';
+
+  document.getElementById('presenca_' + alunoId).value = isPresente ? '1' : '0';
+
+  // Radio exclusivo: desativa os dois antes de ativar apenas o clicado
+  const grupo = btn.parentElement;
+  const btnP = grupo.querySelector('[data-val="1"]');
+  const btnF = grupo.querySelector('[data-val="0"]');
+  btnP.classList.remove('active-presente');
+  btnF.classList.remove('active-ausente');
+
+  if (isPresente) {
+    btnP.classList.add('active-presente');
+  } else {
+    btnF.classList.add('active-ausente');
+  }
+
+  atualizarTotais();
+}
+
+function atualizarTotais() {
+  let presentes = 0, biblias = 0, revistas = 0;
+  document.querySelectorAll('[id^="presenca_"]').forEach(el => {
+    if (el.value === '1') presentes++;
+  });
+  document.querySelectorAll('[id^="biblia_"]').forEach(el => {
+    if (el.checked) biblias++;
+  });
+  document.querySelectorAll('[id^="revista_"]').forEach(el => {
+    if (el.checked) revistas++;
+  });
+
+  document.getElementById('totalPresentes').textContent = presentes;
+  document.getElementById('totalBiblias').textContent = biblias;
+  document.getElementById('totalRevistas').textContent = revistas;
+
+  // Atualiza fechamento automaticamente
+  const matriculados = document.querySelectorAll('[id^="presenca_"]').length;
+  const visitantes = document.querySelectorAll('.visitante-row').length;
+  document.getElementById('fTotalMatriculados').value = matriculados;
+  document.getElementById('fTotalPresentes').value = presentes;
+  document.getElementById('fTotalAusentes').value = matriculados - presentes;
+  document.getElementById('fTotalVisitantes').value = visitantes;
+  document.getElementById('fTotalBiblias').value = biblias;
+  document.getElementById('fTotalRevistas').value = revistas;
+}
+
+// ── Visitantes ──
+function rowVisitante(nome = '', id = null) {
+  return `<div class="visitante-row">
+    <input type="text" class="visitante-nome" value="${esc(nome)}" placeholder="Nome do visitante">
+    <button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="this.parentElement.remove();atualizarTotais();">✕</button>
+  </div>`;
+}
+
+function adicionarVisitante() {
+  document.getElementById('visitantes-container').insertAdjacentHTML('beforeend', rowVisitante());
+  atualizarTotais();
+}
+
+// ── Salvar ──
+async function salvarChamada() {
+  if (!turmaId || !trimestreId || !domingoId) {
+    mostrarMsg('Abra uma chamada primeiro.', 'info');
+    return;
+  }
+
+  // Coleta chamadas de alunos
+  const chamadas = [];
+  document.querySelectorAll('[id^="presenca_"]').forEach(el => {
+    const alunoId = parseInt(el.id.replace('presenca_', ''));
+    chamadas.push({
+      aluno_id: alunoId,
+      presente: el.value === '1',
+      trouxe_biblia: document.getElementById('biblia_' + alunoId)?.checked || false,
+      trouxe_revista: document.getElementById('revista_' + alunoId)?.checked || false,
+    });
+  });
+
+  // Coleta visitantes
+  const visitantes = [];
+  document.querySelectorAll('.visitante-nome').forEach(el => {
+    const nome = el.value.trim();
+    if (nome) visitantes.push({ nome, presente: true });
+  });
+
+  // Fechamento
+  const fechamento = {
+    total_matriculados: parseInt(document.getElementById('fTotalMatriculados').value) || 0,
+    total_presentes: parseInt(document.getElementById('fTotalPresentes').value) || 0,
+    total_visitantes: parseInt(document.getElementById('fTotalVisitantes').value) || 0,
+    total_ausentes: parseInt(document.getElementById('fTotalAusentes').value) || 0,
+    total_biblias: parseInt(document.getElementById('fTotalBiblias').value) || 0,
+    total_revistas: parseInt(document.getElementById('fTotalRevistas').value) || 0,
+    valor_ofertas: parseFloat(document.getElementById('fValorOfertas').value) || 0,
+    observacoes: document.getElementById('fObservacoes').value || null,
+  };
+
+  const payload = {
+    trimestre_id: trimestreId,
+    domingo_id: domingoId,
+    chamadas,
+    visitantes,
+    fechamento,
+  };
+
+  try {
+    const resp = await fetch(`/api/turmas/${turmaId}/chamada`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!resp.ok) throw new Error((await resp.json()).detail || 'Erro ao salvar');
+    mostrarMsg('✅ Chamada salva com sucesso!', 'success');
+  } catch (e) {
+    mostrarMsg('Erro: ' + e.message, 'danger');
+  }
+}
+
+// ── Helpers ──
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function mostrarMsg(texto, tipo) {
+  const m = document.getElementById('msg');
+  m.textContent = texto;
+  m.className = 'alert alert-' + tipo;
+  m.style.display = 'block';
+}
+function esconderMsg() { document.getElementById('msg').style.display = 'none'; }
+</script>
+</body>
+</html>
