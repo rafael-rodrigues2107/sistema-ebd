@@ -237,7 +237,22 @@
 </div>
 
 <script>
+// ── Guarda de acesso: apenas admin ──
+(function () {
+  const token = localStorage.getItem('ebd_token');
+  const role  = localStorage.getItem('ebd_role');
+  if (!token) { window.location.replace('/login.html'); }
+  else if (role !== 'admin') {
+    alert('Acesso negado. Esta área é exclusiva para administradores.');
+    window.location.replace('/');
+  }
+})();
+
 let chartInstance = null;
+
+function _authHeader() {
+  return { 'Authorization': `Bearer ${localStorage.getItem('ebd_token')}` };
+}
 
 // ── Inicialização ──
 document.addEventListener('DOMContentLoaded', carregarTrimestres);
@@ -276,7 +291,7 @@ document.getElementById('trimestreSelect').addEventListener('change', async func
 async function carregarDashboard(trimestreId) {
   esconderMsg();
   try {
-    const resp = await fetch(`/api/dashboard/dados?trimestre_id=${trimestreId}`);
+    const resp = await fetch(`/api/dashboard/dados?trimestre_id=${trimestreId}`, { headers: _authHeader() });
     if (!resp.ok) {
       const err = await resp.json();
       throw new Error(err.detail || 'Erro ao carregar dashboard');

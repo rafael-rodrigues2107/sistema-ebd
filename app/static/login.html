@@ -98,9 +98,10 @@ async function fazerLogin() {
     }
 
     const data = await resp.json();
-    localStorage.setItem('ebd_token', data.access_token);
-    localStorage.setItem('ebd_role',  data.role);
-    localStorage.setItem('ebd_nome',  data.nome);
+    localStorage.setItem('ebd_token',    data.access_token);
+    localStorage.setItem('ebd_role',     data.role);
+    localStorage.setItem('ebd_nome',     data.nome);
+    localStorage.setItem('ebd_turma_id', data.turma_id ?? '');
 
     window.location.replace('/cadastro.html');
   } catch (e) {

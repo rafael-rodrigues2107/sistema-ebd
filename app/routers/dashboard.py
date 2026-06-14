@@ -10,7 +10,8 @@ from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_session
-from models import Aluno, Chamada, Domingo, FechamentoDomingo, Matricula, Trimestre, Turma
+from models import Aluno, Chamada, Domingo, FechamentoDomingo, Matricula, Trimestre, Turma, Usuario
+from routers.auth import require_admin
 from schemas import (
     AlunoNota10Item,
     AlunoSumidoItem,
@@ -25,7 +26,9 @@ router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
 @router.get("/dados", response_model=DashboardRead)
 async def obter_dados_dashboard(
-    trimestre_id: int, session: AsyncSession = Depends(get_session)
+    trimestre_id: int,
+    _admin: Usuario = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
 ):
     if not await session.get(Trimestre, trimestre_id):
         raise HTTPException(status_code=404, detail="Trimestre não encontrado")

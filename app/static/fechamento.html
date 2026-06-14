@@ -79,13 +79,72 @@
   .badge-zero { background: #f8d7da; color: #842029; }
 
   #resumo { display: none; }
+
+  .btn-print { background: #495057; color: #fff; }
+  .btn-print:hover { background: #343a40; }
+
+  /* Elementos exclusivos para impressão ficam ocultos na tela */
+  .print-only { display: none; }
+
+  /* ── @media print ─────────────────────────────────────────── */
+  @media print {
+    @page { size: A4 portrait; margin: 14mm 12mm; }
+
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+    body { background: #fff !important; padding: 0 !important; color: #000 !important; font-size: 10.5pt; }
+    .container { max-width: 100% !important; }
+
+    /* Ocultar elementos operacionais */
+    .no-print { display: none !important; }
+
+    /* Revelar elementos só-impressão */
+    .print-only { display: block !important; }
+
+    /* Remover decoração de cards */
+    .card { border: none !important; border-radius: 0 !important; padding: 0 !important; margin-bottom: 14pt !important; box-shadow: none !important; }
+
+    /* Info bar */
+    .info-bar { background: #eef2ff !important; border: 1px solid #c7d2fe !important; border-radius: 4px !important; padding: 8pt 12pt !important; font-size: 9.5pt !important; gap: 18pt !important; margin-bottom: 14pt !important; }
+    .info-bar strong { color: #000 !important; }
+
+    /* Cards de totais */
+    .stats-grid { grid-template-columns: repeat(4, 1fr) !important; gap: 8pt !important; margin-bottom: 14pt !important; }
+    .stat-card { border: 1.5px solid #dde1e6 !important; border-radius: 4px !important; padding: 10pt 6pt !important; }
+    .stat-card .stat-value { font-size: 22pt !important; }
+    .stat-card .stat-label { font-size: 7pt !important; letter-spacing: .04em !important; }
+    .stat-card.blue   .stat-value { color: #0d6efd !important; }
+    .stat-card.green  .stat-value { color: #198754 !important; }
+    .stat-card.orange .stat-value { color: #fd7e14 !important; }
+    .stat-card.teal   .stat-value { color: #0891b2 !important; }
+
+    /* Tabela */
+    h2 { font-size: 11pt !important; margin-bottom: 8pt !important; }
+    table { border-collapse: collapse !important; width: 100% !important; page-break-inside: avoid; }
+    th, td { border: 1px solid #adb5bd !important; padding: 5pt 7pt !important; font-size: 9.5pt !important; }
+    th { background: #eef2ff !important; color: #374151 !important; font-size: 8pt !important; text-transform: uppercase !important; }
+    th.num, td.num { text-align: center !important; }
+    .tfoot-total td { background: #eef2ff !important; font-weight: 700 !important; border-top: 2px solid #0d6efd !important; }
+    tbody tr:hover { background: transparent !important; }
+    .badge { border: 1px solid #aaa !important; border-radius: 3px !important; background: transparent !important; color: #000 !important; padding: 1pt 4pt !important; }
+
+    /* Cabeçalho do relatório */
+    .print-header { text-align: center !important; padding-bottom: 14pt !important; border-bottom: 2px solid #0d6efd !important; margin-bottom: 18pt !important; }
+    .print-header .ph-icon { display: block !important; font-size: 2rem !important; margin-bottom: 4pt !important; }
+    .print-header h1 { font-size: 15pt !important; color: #0d6efd !important; margin-bottom: 3pt !important; }
+    .print-header h2 { font-size: 11pt !important; font-weight: 400 !important; color: #555 !important; margin: 0 0 3pt !important; }
+    .print-header p  { font-size: 9pt !important; color: #777 !important; }
+
+    /* Rodapé do relatório */
+    .print-footer { display: block !important; margin-top: 20pt !important; text-align: center !important; font-size: 8pt !important; color: #999 !important; border-top: 1px solid #e0e0e0 !important; padding-top: 8pt !important; }
+  }
 </style>
 </head>
 <body>
 <div class="container">
 
   <!-- ── Topbar ── -->
-  <div class="topbar">
+  <div class="topbar no-print">
     <h1>📊 Fechamento do Domingo — EBD</h1>
     <div style="display:flex;gap:8px;">
       <a href="/dashboard.html" class="nav-link">📈 Dashboard</a>
@@ -94,10 +153,10 @@
     </div>
   </div>
 
-  <div id="msg" class="alert"></div>
+  <div id="msg" class="alert no-print"></div>
 
   <!-- ── Seletor de Domingo ── -->
-  <div class="card">
+  <div class="card no-print">
     <div class="filter-row">
       <div class="field">
         <label for="trimestreSelect">Trimestre</label>
@@ -115,6 +174,19 @@
 
   <!-- ── Resumo (oculto até carregar) ── -->
   <div id="resumo">
+
+    <!-- Cabeçalho formal — visível apenas na impressão -->
+    <div class="print-only print-header">
+      <span class="ph-icon">⛪</span>
+      <h1>Escola Bíblica Dominical</h1>
+      <h2>Relatório de Fechamento do Domingo</h2>
+      <p id="printMeta"></p>
+    </div>
+
+    <!-- Botão de impressão — oculto na impressão -->
+    <div class="no-print" style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+      <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir Relatório (PDF)</button>
+    </div>
 
     <!-- Info bar -->
     <div class="info-bar" id="infoBar"></div>
@@ -171,8 +243,8 @@
       </table>
     </div>
 
-    <!-- Confirmação -->
-    <div class="card">
+    <!-- Confirmação — oculta na impressão -->
+    <div class="card no-print">
       <h2>✅ Confirmar Fechamento</h2>
       <p style="color:var(--muted);font-size:.9rem;margin-bottom:14px;">
         Ao confirmar, os totais calculados serão salvos como fechamento oficial deste domingo para cada turma.
@@ -184,11 +256,31 @@
       <button class="btn btn-success" onclick="confirmarFechamento()">💾 Confirmar Fechamento do Dia</button>
     </div>
 
+    <!-- Rodapé formal — visível apenas na impressão -->
+    <div class="print-only print-footer">
+      Gerado em <span id="printGeradoEm"></span> &nbsp;·&nbsp; Sistema EBD
+    </div>
+
   </div>
 </div>
 
 <script>
+// ── Guarda de acesso: apenas admin ──
+(function () {
+  const token = localStorage.getItem('ebd_token');
+  const role  = localStorage.getItem('ebd_role');
+  if (!token) { window.location.replace('/login.html'); }
+  else if (role !== 'admin') {
+    alert('Acesso negado. Esta área é exclusiva para administradores.');
+    window.location.replace('/');
+  }
+})();
+
 let domingoIdAtual = null;
+
+function _authHeader() {
+  return { 'Authorization': `Bearer ${localStorage.getItem('ebd_token')}` };
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   carregarTrimestres();
@@ -250,7 +342,7 @@ async function carregarResumo() {
   domingoIdAtual = domingoId;
 
   try {
-    const resp = await fetch(`/api/fechamento/${domingoId}`);
+    const resp = await fetch(`/api/fechamento/${domingoId}`, { headers: _authHeader() });
     if (!resp.ok) {
       const err = await resp.json();
       throw new Error(err.detail || 'Erro ao carregar resumo');
@@ -265,8 +357,14 @@ async function carregarResumo() {
 }
 
 function renderizarResumo(data) {
-  // Info bar
+  // Preenche meta do cabeçalho de impressão
   const domingoData = new Date(data.domingo_data + 'T00:00:00').toLocaleDateString('pt-BR');
+  document.getElementById('printMeta').textContent =
+    `${domingoData} — ${data.domingo_numero}º Domingo · ${data.trimestre_ano}/${data.trimestre_numero}º Trimestre`;
+  document.getElementById('printGeradoEm').textContent =
+    new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+  // Info bar
   document.getElementById('infoBar').innerHTML = `
     <span>📅 <strong>${domingoData}</strong> — ${data.domingo_numero}º Domingo</span>
     <span>📆 Trimestre <strong>${data.trimestre_ano}/${data.trimestre_numero}º</strong></span>
@@ -333,7 +431,7 @@ async function confirmarFechamento() {
   try {
     const resp = await fetch('/api/fechamento/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ..._authHeader() },
       body: JSON.stringify({ domingo_id: domingoIdAtual, observacoes }),
     });
     if (!resp.ok) {

@@ -202,6 +202,7 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     role: str
     nome: str
+    turma_id: Optional[int] = None
 
 
 class UsuarioCreate(BaseModel):

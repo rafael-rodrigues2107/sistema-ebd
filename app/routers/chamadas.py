@@ -5,6 +5,8 @@ Rotas do Módulo de Chamada e Frequência.
 - POST /api/turmas/{turma_id}/chamada — salva presenças + fechamento
 """
 
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,7 +21,9 @@ from models import (
     Matricula,
     Trimestre,
     Turma,
+    Usuario,
 )
+from routers.auth import get_optional_user
 from schemas import (
     AlunoPainelItem,
     FechamentoRead,
@@ -38,8 +42,13 @@ async def painel_chamada(
     trimestre_id: int,
     domingo_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: Optional[Usuario] = Depends(get_optional_user),
 ):
     """Retorna todos os dados necessários para montar a tela de chamada."""
+
+    if current_user and current_user.role == "professor":
+        if current_user.turma_id != turma_id:
+            raise HTTPException(403, "Professores só podem acessar a chamada de sua própria turma")
 
     # Valida existência da turma / trimestre / domingo
     turma = await session.get(Turma, turma_id)
@@ -141,11 +150,16 @@ async def salvar_chamada(
     turma_id: int,
     body: SaveChamadaRequest,
     session: AsyncSession = Depends(get_session),
+    current_user: Optional[Usuario] = Depends(get_optional_user),
 ):
     """
     Salva (ou atualiza) a chamada completa de um domingo:
     presenças de alunos, visitantes e fechamento.
     """
+
+    if current_user and current_user.role == "professor":
+        if current_user.turma_id != turma_id:
+            raise HTTPException(403, "Professores só podem salvar a chamada de sua própria turma")
 
     # Validações
     turma = await session.get(Turma, turma_id)

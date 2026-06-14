@@ -59,10 +59,12 @@
 <div class="container">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
     <h1 style="margin-bottom:0;">📋 Chamada — Escola Bíblica Dominical</h1>
-    <div style="display:flex;gap:8px;">
-      <a href="/dashboard.html" style="font-size:.85rem;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;">📈 Dashboard</a>
-      <a href="/fechamento.html" style="font-size:.85rem;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;">📊 Fechamento</a>
-      <a href="/cadastro.html" style="font-size:.85rem;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;">⚙️ Cadastros</a>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span id="userGreeting" style="font-size:.82rem;color:var(--muted);"></span>
+      <a id="navDashboard" href="/dashboard.html" style="font-size:.85rem;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;">📈 Dashboard</a>
+      <a id="navFechamento" href="/fechamento.html" style="font-size:.85rem;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;">📊 Fechamento</a>
+      <a id="navCadastros" href="/cadastro.html" style="font-size:.85rem;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;">⚙️ Cadastros</a>
+      <button onclick="fazerLogout()" style="font-size:.85rem;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:6px;padding:6px 14px;cursor:pointer;">Sair</button>
     </div>
   </div>
 
@@ -172,14 +174,40 @@
 </div>
 
 <script>
+// ── Guarda de acesso: exige login ──
+(function () {
+  if (!localStorage.getItem('ebd_token')) { window.location.replace('/login.html'); }
+})();
+
 // ── Estado global ──
 let turmaId = null;
 let trimestreId = null;
 let domingoId = null;
 let painelData = null;
 
+function _authH() {
+  return { 'Authorization': `Bearer ${localStorage.getItem('ebd_token')}` };
+}
+
+function fazerLogout() {
+  ['ebd_token','ebd_role','ebd_nome','ebd_turma_id'].forEach(k => localStorage.removeItem(k));
+  window.location.replace('/login.html');
+}
+
+function configurarNavegacao() {
+  const nome  = localStorage.getItem('ebd_nome') || '';
+  const role  = localStorage.getItem('ebd_role');
+  document.getElementById('userGreeting').textContent = nome ? `Olá, ${nome}` : '';
+  if (role === 'professor') {
+    document.getElementById('navDashboard').style.display  = 'none';
+    document.getElementById('navFechamento').style.display = 'none';
+    document.getElementById('navCadastros').style.display  = 'none';
+  }
+}
+
 // ── Inicialização ──
 document.addEventListener('DOMContentLoaded', () => {
+  configurarNavegacao();
   carregarTrimestres();
   carregarTurmas();
 });
@@ -214,6 +242,17 @@ async function carregarTurmas() {
     turmas.forEach(t => {
       sel.innerHTML += `<option value="${t.id}">${t.nome} (${t.faixa_etaria})</option>`;
     });
+    // Professores: travar o select na própria turma
+    if (localStorage.getItem('ebd_role') === 'professor') {
+      const tid = localStorage.getItem('ebd_turma_id');
+      if (tid) {
+        sel.value = tid;
+        sel.disabled = true;
+      } else {
+        sel.innerHTML = '<option value="">Sem turma vinculada — contate o admin</option>';
+        sel.disabled = true;
+      }
+    }
   } catch (e) {
     sel.innerHTML = '<option value="">Erro ao carregar</option>';
   }
@@ -253,7 +292,7 @@ async function carregarPainel() {
 
   esconderMsg();
   try {
-    const resp = await fetch(`/api/turmas/${turmaId}/painel?trimestre_id=${trimestreId}&domingo_id=${domingoId}`);
+    const resp = await fetch(`/api/turmas/${turmaId}/painel?trimestre_id=${trimestreId}&domingo_id=${domingoId}`, { headers: _authH() });
     if (!resp.ok) throw new Error((await resp.json()).detail || 'Erro');
     painelData = await resp.json();
     renderizarPainel(painelData);
@@ -434,7 +473,7 @@ async function salvarChamada() {
   try {
     const resp = await fetch(`/api/turmas/${turmaId}/chamada`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ..._authH() },
       body: JSON.stringify(payload),
     });
     if (!resp.ok) throw new Error((await resp.json()).detail || 'Erro ao salvar');

@@ -314,6 +314,17 @@
 </div>
 
 <script>
+// ── Guarda de acesso: apenas admin ──
+(function () {
+  const token = localStorage.getItem('ebd_token');
+  const role  = localStorage.getItem('ebd_role');
+  if (!token) { window.location.replace('/login.html'); }
+  else if (role !== 'admin') {
+    alert('Acesso negado. Esta área é exclusiva para administradores.');
+    window.location.replace('/');
+  }
+})();
+
 // ── Estado ──
 let turmasCache = [];
 let trimestresCache = [];

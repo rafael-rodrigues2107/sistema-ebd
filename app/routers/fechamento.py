@@ -9,7 +9,8 @@ from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_session
-from models import Chamada, Domingo, FechamentoDomingo, Matricula, Trimestre, Turma
+from models import Chamada, Domingo, FechamentoDomingo, Matricula, Trimestre, Turma, Usuario
+from routers.auth import require_admin
 from schemas import ConfirmarFechamentoDiaCreate, FechamentoDiaRead, TurmaResumoFechamento
 
 router = APIRouter(prefix="/api/fechamento", tags=["Fechamento"])
@@ -17,7 +18,9 @@ router = APIRouter(prefix="/api/fechamento", tags=["Fechamento"])
 
 @router.get("/{domingo_id}", response_model=FechamentoDiaRead)
 async def obter_fechamento_dia(
-    domingo_id: int, session: AsyncSession = Depends(get_session)
+    domingo_id: int,
+    _admin: Usuario = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
 ):
     domingo = await session.get(Domingo, domingo_id)
     if not domingo:
@@ -104,7 +107,9 @@ async def obter_fechamento_dia(
 
 @router.post("/", status_code=status.HTTP_200_OK)
 async def confirmar_fechamento(
-    body: ConfirmarFechamentoDiaCreate, session: AsyncSession = Depends(get_session)
+    body: ConfirmarFechamentoDiaCreate,
+    _admin: Usuario = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
 ):
     """Consolida os dados de chamada em FechamentoDomingo para cada turma (upsert)."""
     domingo = await session.get(Domingo, body.domingo_id)

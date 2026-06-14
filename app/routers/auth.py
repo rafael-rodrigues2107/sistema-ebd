@@ -84,6 +84,24 @@ async def require_admin(user: Usuario = Depends(get_current_user)) -> Usuario:
     return user
 
 
+async def get_optional_user(
+    token: Optional[str] = Depends(oauth2_scheme),
+    session: AsyncSession = Depends(get_session),
+) -> Optional[Usuario]:
+    """Retorna o usuário se o token for válido; None se ausente/inválido."""
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        if not user_id:
+            return None
+    except JWTError:
+        return None
+    user = await session.get(Usuario, int(user_id))
+    return user if (user and user.ativo) else None
+
+
 def _to_read(u: Usuario) -> UsuarioRead:
     return UsuarioRead(
         id=u.id,
@@ -114,6 +132,7 @@ async def login(body: LoginRequest, session: AsyncSession = Depends(get_session)
         token_type="bearer",
         role=user.role,
         nome=user.nome,
+        turma_id=user.turma_id,
     )
 
 
