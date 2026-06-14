@@ -9,9 +9,11 @@ Uso:
 import asyncio
 from datetime import date, timedelta
 
-from database import engine, get_session, _async_session_factory
-from models import Aluno, Domingo, Matricula, Trimestre, Turma
+import bcrypt as _bcrypt
 from sqlalchemy import select
+
+from database import _async_session_factory
+from models import Aluno, Domingo, Matricula, Trimestre, Turma, Usuario
 
 # ── Dados de exemplo ───────────────────────────────────────────────────────
 
@@ -168,6 +170,23 @@ async def seed():
         await session.commit()
         print(f"  ✅ {total_criados} matrículas criadas/verificadas.")
         print("🏁 Seed concluído com sucesso!")
+
+
+async def seed_admin() -> None:
+    """Cria o usuário administrador padrão se nenhum usuário existir."""
+    async with _async_session_factory() as session:
+        total = await session.scalar(select(Usuario).limit(1))
+        if total is not None:
+            return
+        admin = Usuario(
+            nome="Administrador",
+            username="admin",
+            senha_hash=_bcrypt.hashpw(b"admin123", _bcrypt.gensalt()).decode(),
+            role="admin",
+        )
+        session.add(admin)
+        await session.commit()
+        print("✅ Admin padrão criado — username: admin / senha: admin123")
 
 
 if __name__ == "__main__":

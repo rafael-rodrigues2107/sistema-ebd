@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — EBD</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card: #fff;
+    --border: #dde1e6;
+    --text: #212529;
+    --muted: #6c757d;
+    --primary: #0d6efd;
+    --danger: #dc3545;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .login-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 40px 36px; width: 100%; max-width: 380px; box-shadow: 0 4px 24px rgba(0,0,0,.08); }
+  .brand { text-align: center; margin-bottom: 28px; }
+  .brand .logo { font-size: 2.4rem; }
+  .brand h1 { font-size: 1.3rem; color: var(--primary); margin-top: 8px; }
+  .brand p { font-size: .85rem; color: var(--muted); margin-top: 4px; }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: .85rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+  .field input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; }
+  .field input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13,110,253,.15); }
+  .btn-login { width: 100%; padding: 11px; background: var(--primary); color: #fff; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 4px; transition: background .15s; }
+  .btn-login:hover { background: #0b5ed7; }
+  .btn-login:disabled { background: #6ea8fe; cursor: not-allowed; }
+  .alert { padding: 10px 14px; border-radius: 6px; font-size: .9rem; margin-bottom: 16px; display: none; background: #f8d7da; border: 1px solid #f5c2c7; color: #842029; }
+  .footer-links { text-align: center; margin-top: 20px; }
+  .footer-links a { font-size: .82rem; color: var(--muted); text-decoration: none; }
+  .footer-links a:hover { color: var(--primary); }
+</style>
+</head>
+<body>
+<div class="login-card">
+  <div class="brand">
+    <div class="logo">⛪</div>
+    <h1>Sistema EBD</h1>
+    <p>Escola Bíblica Dominical</p>
+  </div>
+
+  <div id="alert" class="alert"></div>
+
+  <div class="field">
+    <label for="username">Usuário</label>
+    <input type="text" id="username" placeholder="ex: admin" autocomplete="username" autofocus>
+  </div>
+  <div class="field">
+    <label for="senha">Senha</label>
+    <input type="password" id="senha" placeholder="••••••••" autocomplete="current-password">
+  </div>
+
+  <button class="btn-login" id="btnLogin" onclick="fazerLogin()">Entrar</button>
+
+  <div class="footer-links">
+    <a href="/">← Voltar sem login</a>
+  </div>
+</div>
+
+<script>
+// Se já está logado como admin, vai direto para cadastro
+const tokenSalvo = localStorage.getItem('ebd_token');
+if (tokenSalvo) {
+  window.location.replace('/cadastro.html');
+}
+
+document.getElementById('senha').addEventListener('keydown', e => {
+  if (e.key === 'Enter') fazerLogin();
+});
+
+async function fazerLogin() {
+  const username = document.getElementById('username').value.trim();
+  const senha    = document.getElementById('senha').value;
+  const btn      = document.getElementById('btnLogin');
+
+  if (!username || !senha) {
+    mostrarErro('Preencha usuário e senha.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Entrando…';
+
+  try {
+    const resp = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, senha }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.detail || 'Credenciais inválidas');
+    }
+
+    const data = await resp.json();
+    localStorage.setItem('ebd_token', data.access_token);
+    localStorage.setItem('ebd_role',  data.role);
+    localStorage.setItem('ebd_nome',  data.nome);
+
+    window.location.replace('/cadastro.html');
+  } catch (e) {
+    mostrarErro(e.message);
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+}
+
+function mostrarErro(msg) {
+  const el = document.getElementById('alert');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+</script>
+</body>
+</html>

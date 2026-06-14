@@ -330,7 +330,35 @@ class FechamentoDomingo(Base):
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# 10. Oferta (registro individual de ofertas/dízimos)
+# 10. Usuário do Sistema (autenticação)
+# ═════════════════════════════════════════════════════════════════════════════
+class Usuario(Base):
+    """Usuário com acesso ao sistema (admin ou professor de turma)."""
+
+    __tablename__ = "usuarios"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    nome: Mapped[str] = mapped_column(String(200), nullable=False)
+    username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    senha_hash: Mapped[str] = mapped_column(String(200), nullable=False)
+    role: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="professor",
+        comment="admin | professor"
+    )
+    turma_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("turmas.id", ondelete="SET NULL"), nullable=True
+    )
+    ativo: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+    turma: Mapped[Optional["Turma"]] = relationship(lazy="selectin")
+
+    def __repr__(self) -> str:
+        return f"<Usuario id={self.id} username='{self.username}' role='{self.role}'>"
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 11. Oferta (registro individual de ofertas/dízimos)
 # ═════════════════════════════════════════════════════════════════════════════
 class Oferta(Base):
     """Registro de ofertas e dízimos por turma em cada domingo."""

@@ -190,6 +190,50 @@ class SaveChamadaRequest(BaseModel):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# Autenticação e Usuários
+# ═══════════════════════════════════════════════════════════════════════════
+class LoginRequest(BaseModel):
+    username: str
+    senha: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    role: str
+    nome: str
+
+
+class UsuarioCreate(BaseModel):
+    nome: str = Field(..., max_length=200)
+    username: str = Field(..., max_length=100)
+    senha: str = Field(..., min_length=4)
+    role: str = Field(default="professor", pattern="^(admin|professor)$")
+    turma_id: Optional[int] = None
+
+
+class UsuarioRead(BaseModel):
+    id: int
+    nome: str
+    username: str
+    role: str
+    turma_id: Optional[int]
+    turma_nome: Optional[str]
+    ativo: bool
+
+    model_config = {"from_attributes": True}
+
+
+class UsuarioUpdate(BaseModel):
+    nome: Optional[str] = None
+    username: Optional[str] = None
+    senha: Optional[str] = None
+    role: Optional[str] = Field(default=None, pattern="^(admin|professor)$")
+    turma_id: Optional[int] = None
+    ativo: Optional[bool] = None
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # Dashboard da Liderança
 # ═══════════════════════════════════════════════════════════════════════════
 class DomingoPresencaItem(BaseModel):
@@ -214,11 +258,28 @@ class AlunoSumidoItem(BaseModel):
     faltas_consecutivas: int
 
 
+class TurmaOfertaItem(BaseModel):
+    turma_id: int
+    turma_nome: str
+    total_ofertas: Decimal
+
+
+class AlunoNota10Item(BaseModel):
+    aluno_id: int
+    aluno_nome: str
+    turma_nome: str
+    total_domingos: int
+
+
 class DashboardRead(BaseModel):
     trimestre_id: int
     historico_presenca: list[DomingoPresencaItem]
     ranking_turmas: list[TurmaRankingItem]
     alunos_sumidos: list[AlunoSumidoItem]
+    total_acumulado_ofertas: Decimal
+    ranking_ofertas: list[TurmaOfertaItem]
+    campeao_visitantes: Optional[str]
+    alunos_nota_10: list[AlunoNota10Item]
 
 
 # ═══════════════════════════════════════════════════════════════════════════

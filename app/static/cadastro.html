@@ -54,6 +54,27 @@
   .nav-link { font-size: .85rem; color: var(--muted); text-decoration: none; border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; }
   .nav-link:hover { background: #f0f0f0; }
   .empty-row td { text-align: center; color: var(--muted); font-style: italic; padding: 20px; }
+
+  /* Gestão de Acessos */
+  .auth-section { background: #f8f4ff; border: 1px solid #d8b4fe; border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+  .auth-section h2 { color: #6d28d9; margin-bottom: 16px; }
+  .auth-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 800px) { .auth-grid { grid-template-columns: 1fr; } }
+  .auth-grid > .card { margin-bottom: 0; }
+  .role-badge { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: .75rem; font-weight: 700; }
+  .role-admin { background: #ede9fe; color: #5b21b6; }
+  .role-prof  { background: #d1fae5; color: #065f46; }
+  .btn-xs { padding: 3px 8px; font-size: .78rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
+  .btn-edit { background: #dbeafe; color: #1d4ed8; }
+  .btn-del  { background: #fee2e2; color: #dc2626; }
+  .btn-edit:hover { background: #bfdbfe; }
+  .btn-del:hover  { background: #fecaca; }
+  .admin-bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #ede9fe; border-radius: 6px; margin-bottom: 16px; font-size: .9rem; }
+  .admin-bar strong { color: #5b21b6; }
+  .btn-logout { padding: 4px 12px; font-size: .8rem; border: 1px solid #c4b5fd; border-radius: 6px; background: transparent; color: #6d28d9; cursor: pointer; }
+  .btn-logout:hover { background: #c4b5fd; }
+  #loginBanner { display: none; padding: 14px 16px; background: #ede9fe; border: 1px solid #c4b5fd; border-radius: var(--radius); margin-bottom: 20px; font-size: .9rem; color: #5b21b6; }
+  #loginBanner a { color: #5b21b6; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -61,11 +82,18 @@
 
   <div class="topbar">
     <h1>⚙️ Cadastros — EBD</h1>
-    <div style="display:flex;gap:8px;">
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span id="topbarUser" style="display:none;font-size:.82rem;color:var(--muted);"></span>
       <a href="/dashboard.html" class="nav-link">📈 Dashboard</a>
       <a href="/fechamento.html" class="nav-link">📊 Fechamento</a>
       <a href="/" class="nav-link">📋 Chamada</a>
+      <a href="/login.html" id="loginLink" class="nav-link" style="display:none;">🔐 Login</a>
     </div>
+  </div>
+
+  <!-- Banner para não logados -->
+  <div id="loginBanner">
+    🔐 <a href="/login.html">Faça login como administrador</a> para acessar a Gestão de Acessos.
   </div>
 
   <div id="msg-turma"     class="alert"></div>
@@ -211,6 +239,78 @@
     </table>
   </div>
 
+  <!-- ── Gestão de Acessos (apenas admin) ── -->
+  <div id="gestoAcessos" style="display:none;">
+    <div class="auth-section">
+      <h2>🔐 Gestão de Acessos</h2>
+
+      <div class="admin-bar">
+        Logado como: <strong id="adminNomeBar">—</strong>
+        <button class="btn-logout" onclick="logout()">Sair</button>
+      </div>
+
+      <div class="auth-grid">
+
+        <!-- Formulário criar/editar usuário -->
+        <div class="card">
+          <h3 id="formUsuarioTitulo" style="font-size:1rem;margin-bottom:14px;">➕ Novo Usuário</h3>
+          <input type="hidden" id="usuarioEditId">
+          <div id="msg-usuario" class="alert" style="display:none;"></div>
+
+          <div class="field">
+            <label for="uNome">Nome Completo *</label>
+            <input type="text" id="uNome" placeholder="Nome do usuário">
+          </div>
+          <div class="field">
+            <label for="uUsername">Username *</label>
+            <input type="text" id="uUsername" placeholder="Ex: prof.joao" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="uSenha">Senha *</label>
+            <input type="password" id="uSenha" placeholder="Mínimo 4 caracteres" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label for="uRole">Perfil *</label>
+            <select id="uRole" onchange="toggleTurmaField()">
+              <option value="professor">Professor</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+          <div class="field" id="campoTurmaUsuario">
+            <label for="uTurma">Turma do Professor</label>
+            <select id="uTurma">
+              <option value="">Nenhuma</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:4px;">
+            <button class="btn btn-primary" onclick="salvarUsuario()">Salvar</button>
+            <button class="btn" id="btnCancelarUsuario" style="display:none;background:#e9ecef;color:var(--text);" onclick="cancelarEdicaoUsuario()">Cancelar</button>
+          </div>
+        </div>
+
+        <!-- Tabela de usuários -->
+        <div class="card">
+          <h3 style="font-size:1rem;margin-bottom:14px;">👥 Usuários do Sistema</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Username</th>
+                <th>Perfil</th>
+                <th>Turma</th>
+                <th style="text-align:center;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="usuariosTbody">
+              <tr class="empty-row"><td colspan="5">Carregando…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -220,11 +320,11 @@ let trimestresCache = [];
 
 // ── Inicialização ──
 document.addEventListener('DOMContentLoaded', () => {
-  // Pré-preenche o ano atual
   document.getElementById('trimestreAno').value = new Date().getFullYear();
   carregarTurmas();
   carregarTrimestres();
   carregarMatriculas();
+  verificarAuth();
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -479,6 +579,200 @@ function mostrarMsg(prefixo, texto, tipo) {
   el.className = 'alert alert-' + tipo;
   el.style.display = 'block';
   setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════════
+
+function getToken() { return localStorage.getItem('ebd_token'); }
+function getRole()  { return localStorage.getItem('ebd_role'); }
+function getNome()  { return localStorage.getItem('ebd_nome'); }
+
+function authHeaders() {
+  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` };
+}
+
+async function verificarAuth() {
+  const token = getToken();
+  if (!token) {
+    document.getElementById('loginLink').style.display = '';
+    document.getElementById('loginBanner').style.display = 'block';
+    return;
+  }
+  try {
+    const resp = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
+    if (!resp.ok) throw new Error();
+    const me = await resp.json();
+    // Atualiza nome armazenado
+    localStorage.setItem('ebd_nome', me.nome);
+    localStorage.setItem('ebd_role', me.role);
+
+    document.getElementById('topbarUser').textContent = `Olá, ${me.nome}`;
+    document.getElementById('topbarUser').style.display = '';
+
+    if (me.role === 'admin') {
+      document.getElementById('adminNomeBar').textContent = me.nome;
+      document.getElementById('gestoAcessos').style.display = 'block';
+      document.getElementById('loginBanner').style.display = 'none';
+      popularSelectTurmasUsuario();
+      carregarUsuarios();
+    }
+  } catch {
+    localStorage.removeItem('ebd_token');
+    localStorage.removeItem('ebd_role');
+    localStorage.removeItem('ebd_nome');
+    document.getElementById('loginLink').style.display = '';
+    document.getElementById('loginBanner').style.display = 'block';
+  }
+}
+
+function logout() {
+  localStorage.removeItem('ebd_token');
+  localStorage.removeItem('ebd_role');
+  localStorage.removeItem('ebd_nome');
+  window.location.reload();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GESTÃO DE USUÁRIOS
+// ═══════════════════════════════════════════════════════════════
+
+function toggleTurmaField() {
+  const role = document.getElementById('uRole').value;
+  document.getElementById('campoTurmaUsuario').style.display = role === 'professor' ? '' : 'none';
+}
+
+function popularSelectTurmasUsuario() {
+  const sel = document.getElementById('uTurma');
+  sel.innerHTML = '<option value="">Nenhuma</option>';
+  turmasCache.forEach(t => {
+    sel.innerHTML += `<option value="${t.id}">${esc(t.nome)}</option>`;
+  });
+}
+
+async function carregarUsuarios() {
+  const tbody = document.getElementById('usuariosTbody');
+  try {
+    const resp = await fetch('/api/usuarios/', { headers: authHeaders() });
+    if (!resp.ok) throw new Error();
+    const lista = await resp.json();
+    if (!lista.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Nenhum usuário cadastrado.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = lista.map(u => {
+      const badgeCls = u.role === 'admin' ? 'role-admin' : 'role-prof';
+      const badgeTxt = u.role === 'admin' ? 'Admin' : 'Professor';
+      return `<tr>
+        <td><strong>${esc(u.nome)}</strong></td>
+        <td><code style="font-size:.85rem;">${esc(u.username)}</code></td>
+        <td><span class="role-badge ${badgeCls}">${badgeTxt}</span></td>
+        <td style="color:var(--muted);font-size:.88rem;">${esc(u.turma_nome || '—')}</td>
+        <td style="text-align:center;">
+          <button class="btn-xs btn-edit" onclick="editarUsuario(${u.id},'${esc(u.nome)}','${esc(u.username)}','${u.role}',${u.turma_id ?? 'null'})">Editar</button>
+          <button class="btn-xs btn-del" onclick="removerUsuario(${u.id},'${esc(u.nome)}')" style="margin-left:4px;">Remover</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Erro ao carregar usuários.</td></tr>';
+  }
+}
+
+async function salvarUsuario() {
+  const editId = document.getElementById('usuarioEditId').value;
+  const nome   = document.getElementById('uNome').value.trim();
+  const username = document.getElementById('uUsername').value.trim();
+  const senha  = document.getElementById('uSenha').value;
+  const role   = document.getElementById('uRole').value;
+  const turmaId = parseInt(document.getElementById('uTurma').value) || null;
+
+  if (!nome || !username) {
+    mostrarMsg('usuario', 'Preencha Nome e Username.', 'info');
+    return;
+  }
+  if (!editId && !senha) {
+    mostrarMsg('usuario', 'Informe a senha para o novo usuário.', 'info');
+    return;
+  }
+
+  const body = { nome, username, role, turma_id: turmaId };
+  if (senha) body.senha = senha;
+
+  try {
+    let resp;
+    if (editId) {
+      resp = await fetch(`/api/usuarios/${editId}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify(body),
+      });
+    } else {
+      if (!senha) { mostrarMsg('usuario', 'Senha obrigatória.', 'info'); return; }
+      resp = await fetch('/api/usuarios/', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ ...body, senha }),
+      });
+    }
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.detail || 'Erro ao salvar');
+    }
+    mostrarMsg('usuario', `✅ Usuário ${editId ? 'atualizado' : 'criado'} com sucesso!`, 'success');
+    limparFormUsuario();
+    await carregarUsuarios();
+  } catch (e) {
+    mostrarMsg('usuario', 'Erro: ' + e.message, 'danger');
+  }
+}
+
+function editarUsuario(id, nome, username, role, turmaId) {
+  document.getElementById('usuarioEditId').value = id;
+  document.getElementById('uNome').value = nome;
+  document.getElementById('uUsername').value = username;
+  document.getElementById('uRole').value = role;
+  document.getElementById('uTurma').value = turmaId ?? '';
+  document.getElementById('uSenha').value = '';
+  document.getElementById('uSenha').placeholder = 'Deixe em branco para manter a atual';
+  document.getElementById('formUsuarioTitulo').textContent = '✏️ Editar Usuário';
+  document.getElementById('btnCancelarUsuario').style.display = '';
+  toggleTurmaField();
+}
+
+function cancelarEdicaoUsuario() {
+  limparFormUsuario();
+}
+
+function limparFormUsuario() {
+  document.getElementById('usuarioEditId').value = '';
+  document.getElementById('uNome').value = '';
+  document.getElementById('uUsername').value = '';
+  document.getElementById('uSenha').value = '';
+  document.getElementById('uSenha').placeholder = 'Mínimo 4 caracteres';
+  document.getElementById('uRole').value = 'professor';
+  document.getElementById('uTurma').value = '';
+  document.getElementById('formUsuarioTitulo').textContent = '➕ Novo Usuário';
+  document.getElementById('btnCancelarUsuario').style.display = 'none';
+  toggleTurmaField();
+}
+
+async function removerUsuario(id, nome) {
+  if (!confirm(`Remover o usuário "${nome}"? Esta ação não pode ser desfeita.`)) return;
+  try {
+    const resp = await fetch(`/api/usuarios/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.detail || 'Erro ao remover');
+    }
+    await carregarUsuarios();
+  } catch (e) {
+    alert('Erro: ' + e.message);
+  }
 }
 </script>
 </body>

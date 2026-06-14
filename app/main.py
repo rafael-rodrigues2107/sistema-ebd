@@ -14,19 +14,21 @@ from fastapi.responses import FileResponse
 from config import settings
 from database import init_db
 from routers.alunos import router as alunos_router
+from routers.auth import auth_router, usuarios_router
 from routers.chamadas import router as chamadas_router
 from routers.dashboard import router as dashboard_router
 from routers.fechamento import router as fechamento_router
 from routers.matriculas import router as matriculas_router
 from routers.trimestres import router as trimestres_router
 from routers.turmas import router as turmas_router
-from seed import seed as executar_seed
+from seed import seed as executar_seed, seed_admin
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Startup / shutdown events."""
     await init_db()
+    await seed_admin()
     yield
 
 
@@ -45,6 +47,8 @@ app.include_router(alunos_router)
 app.include_router(matriculas_router)
 app.include_router(fechamento_router)
 app.include_router(dashboard_router)
+app.include_router(auth_router)
+app.include_router(usuarios_router)
 
 # ── Arquivos estáticos (frontend) ──
 static_dir = Path(__file__).parent / "static"
@@ -77,3 +81,8 @@ async def fechamento():
 @app.get("/dashboard.html")
 async def dashboard():
     return FileResponse(static_dir / "dashboard.html")
+
+
+@app.get("/login.html")
+async def login_page():
+    return FileResponse(static_dir / "login.html")

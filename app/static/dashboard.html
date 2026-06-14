@@ -22,14 +22,12 @@
   body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 24px; }
   .container { max-width: 1100px; margin: 0 auto; }
 
-  /* Topbar */
   .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 8px; }
   h1 { font-size: 1.5rem; color: var(--primary); }
   h2 { font-size: 1.1rem; margin-bottom: 14px; }
   .nav-link { font-size: .85rem; color: var(--muted); text-decoration: none; border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; }
   .nav-link:hover { background: #f0f0f0; }
 
-  /* Cards */
   .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
 
   /* Filtro */
@@ -41,8 +39,7 @@
 
   /* Alert */
   .alert { padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-size: .9rem; display: none; }
-  .alert-info    { background: #cff4fc; border: 1px solid #b6effb; }
-  .alert-danger  { background: #f8d7da; border: 1px solid #f5c2c7; }
+  .alert-danger { background: #f8d7da; border: 1px solid #f5c2c7; }
 
   /* Tabela base */
   table { width: 100%; border-collapse: collapse; }
@@ -52,11 +49,29 @@
   tbody tr:hover { background: #f8f9fa; }
   .empty-row td { text-align: center; color: var(--muted); font-style: italic; padding: 24px; }
 
+  /* Cards de destaque (Ofertas + Campeã Visitantes) */
+  .highlights-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  @media (max-width: 600px) { .highlights-row { grid-template-columns: 1fr; } }
+  .hl-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 20px; text-align: center; }
+  .hl-card .hl-icon { font-size: 1.6rem; margin-bottom: 6px; }
+  .hl-card .hl-label { font-size: .75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+  .hl-card .hl-value { font-size: 2rem; font-weight: 800; line-height: 1.1; }
+  .hl-card.green  { border-top: 4px solid var(--success); }
+  .hl-card.green  .hl-value { color: var(--success); }
+  .hl-card.teal   { border-top: 4px solid #0dcaf0; }
+  .hl-card.teal   .hl-value { color: #0891b2; font-size: 1.3rem; }
+  .hl-card .hl-sub { font-size: .8rem; color: var(--muted); margin-top: 4px; }
+
+  /* Grid de rankings lado a lado */
+  .rankings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  @media (max-width: 800px) { .rankings-grid { grid-template-columns: 1fr; } }
+  .rankings-grid > .card { margin-bottom: 0; }
+
   /* Barra de frequência */
   .freq-wrap { display: flex; align-items: center; gap: 10px; }
-  .freq-track { flex: 1; height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden; min-width: 80px; }
-  .freq-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
-  .freq-pct { font-size: .85rem; font-weight: 700; min-width: 42px; text-align: right; }
+  .freq-track { flex: 1; height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden; min-width: 60px; }
+  .freq-fill { height: 100%; border-radius: 4px; }
+  .freq-pct { font-size: .85rem; font-weight: 700; min-width: 44px; text-align: right; }
 
   /* Posição no ranking */
   .rank-num { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-size: .8rem; font-weight: 700; }
@@ -65,7 +80,16 @@
   .rank-3 { background: #cd7f32; color: #5a3000; }
   .rank-other { background: #e9ecef; color: var(--muted); }
 
-  /* Alunos sumidos — secção de aviso */
+  /* Seção Nota 10 */
+  .nota10-section { background: linear-gradient(135deg, #fffde7, #fff9c4); border: 1px solid #f9e03b; border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+  .nota10-section h2 { color: #5d4037; margin-bottom: 4px; }
+  .nota10-section .subtitle { font-size: .85rem; color: #795548; margin-bottom: 14px; }
+  .nota10-section table th { background: rgba(249,224,59,.3); color: #5d4037; border-bottom-color: #f9e03b; }
+  .nota10-section table td { border-bottom-color: rgba(249,224,59,.4); }
+  .nota10-section tbody tr:hover td { background: rgba(249,224,59,.15); }
+  .badge-domingos { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .78rem; font-weight: 700; background: #fff9c4; color: #5d4037; border: 1px solid #f9e03b; }
+
+  /* Seção Alunos Sumidos */
   .warning-section { background: #fff8e1; border: 1px solid #ffe082; border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
   .warning-section h2 { color: #e65100; margin-bottom: 4px; }
   .warning-section .subtitle { font-size: .85rem; color: #bf360c; margin-bottom: 14px; }
@@ -78,15 +102,15 @@
   .badge-4  { background: #ffe0b2; color: #e65100; }
   .badge-5p { background: #ffcdd2; color: #c62828; }
 
-  /* Empty state verde (sem sumidos) */
-  .all-ok { display: flex; align-items: center; gap: 12px; padding: 16px; background: #d1e7dd; border-radius: 8px; color: #0f5132; font-weight: 600; font-size: .95rem; }
+  /* Mensagem positiva */
+  .all-ok { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: #d1e7dd; border-radius: 8px; color: #0f5132; font-weight: 600; font-size: .9rem; }
 
   /* Gráfico */
   .chart-wrap { position: relative; height: 260px; }
 
-  /* Placeholders */
-  .placeholder { text-align: center; color: var(--muted); padding: 60px 20px; font-size: .95rem; }
-  .placeholder span { display: block; font-size: 2.5rem; margin-bottom: 10px; }
+  /* Placeholder */
+  .placeholder { text-align: center; color: var(--muted); padding: 48px 20px; font-size: .95rem; }
+  .placeholder .ph-icon { display: block; font-size: 2.5rem; margin-bottom: 10px; }
 
   #conteudo { display: none; }
 </style>
@@ -104,7 +128,7 @@
     </div>
   </div>
 
-  <div id="msg" class="alert"></div>
+  <div id="msg" class="alert alert-danger"></div>
 
   <!-- Filtro de Trimestre -->
   <div class="card">
@@ -116,22 +140,22 @@
     </div>
   </div>
 
-  <!-- Placeholder enquanto não há dados -->
+  <!-- Placeholder inicial -->
   <div id="placeholder" class="card">
     <div class="placeholder">
-      <span>📊</span>
+      <span class="ph-icon">📊</span>
       Selecione um trimestre para visualizar o painel de liderança.
     </div>
   </div>
 
-  <!-- Conteúdo carregado -->
+  <!-- ══ Conteúdo ══ -->
   <div id="conteudo">
 
-    <!-- Gráfico de evolução de presenças -->
+    <!-- Gráfico de evolução -->
     <div class="card">
       <h2>📉 Evolução de Presenças — Domingo a Domingo</h2>
       <div id="chartPlaceholder" class="placeholder" style="display:none;">
-        <span>📅</span>
+        <span class="ph-icon">📅</span>
         Nenhuma chamada registrada ainda neste trimestre.
       </div>
       <div class="chart-wrap" id="chartWrap">
@@ -139,34 +163,79 @@
       </div>
     </div>
 
-    <!-- Ranking de Turmas -->
-    <div class="card">
-      <h2>🏆 Ranking de Turmas — Frequência Média</h2>
-      <table id="rankingTable">
-        <thead>
-          <tr>
-            <th style="width:40px;">#</th>
-            <th>Turma</th>
-            <th>Frequência Média</th>
-            <th class="num">Domingos</th>
-          </tr>
-        </thead>
-        <tbody id="rankingTbody">
-          <tr class="empty-row"><td colspan="4">Nenhum dado disponível.</td></tr>
-        </tbody>
-      </table>
+    <!-- Cards de destaque: Ofertas + Campeã Visitantes -->
+    <div class="highlights-row">
+      <div class="hl-card green">
+        <div class="hl-icon">💰</div>
+        <div class="hl-label">Total Acumulado de Ofertas</div>
+        <div class="hl-value" id="hlOfertas">R$ 0,00</div>
+        <div class="hl-sub">soma de todos os fechamentos do trimestre</div>
+      </div>
+      <div class="hl-card teal">
+        <div class="hl-icon">🏅</div>
+        <div class="hl-label">Classe Campeã de Visitantes</div>
+        <div class="hl-value" id="hlCampeao">—</div>
+        <div class="hl-sub" id="hlCampeaoSub">nenhum visitante registrado ainda</div>
+      </div>
+    </div>
+
+    <!-- Rankings lado a lado -->
+    <div class="rankings-grid">
+
+      <!-- Ranking de Frequência -->
+      <div class="card">
+        <h2>🏆 Ranking — Frequência Média</h2>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:36px;">#</th>
+              <th>Turma</th>
+              <th>Frequência</th>
+              <th class="num">Dom.</th>
+            </tr>
+          </thead>
+          <tbody id="rankingTbody">
+            <tr class="empty-row"><td colspan="4">Nenhum dado disponível.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Ranking Financeiro -->
+      <div class="card">
+        <h2>💰 Ranking — Ofertas Arrecadadas</h2>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:36px;">#</th>
+              <th>Turma</th>
+              <th>Ofertas</th>
+            </tr>
+          </thead>
+          <tbody id="rankingOfertasTbody">
+            <tr class="empty-row"><td colspan="3">Nenhum fechamento registrado.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- Alunos Nota 10 -->
+    <div class="nota10-section">
+      <h2>⭐ Alunos Nota 10 — 100% de Presença</h2>
+      <p class="subtitle">Alunos ativos com presença em todos os domingos onde foram registrados na chamada.</p>
+      <div id="nota10Conteudo"></div>
     </div>
 
     <!-- Alunos Sumidos -->
-    <div class="warning-section" id="sumidosSection">
-      <h2>⚠️ Alerta de Retenção — Alunos Ausentes há 3+ Domingos</h2>
+    <div class="warning-section">
+      <h2>⚠️ Alerta de Retenção — Ausentes há 3+ Domingos</h2>
       <p class="subtitle">Alunos com matrícula ativa que acumulam 3 ou mais faltas consecutivas nos domingos mais recentes.</p>
       <div id="sumidosConteudo"></div>
     </div>
 
   </div>
-
 </div>
+
 <script>
 let chartInstance = null;
 
@@ -182,7 +251,6 @@ async function carregarTrimestres() {
     lista.forEach(t => {
       sel.innerHTML += `<option value="${t.id}">${t.ano} — ${t.numero}º Trimestre</option>`;
     });
-
     const ativoResp = await fetch('/api/trimestres/ativo').catch(() => null);
     if (ativoResp && ativoResp.ok) {
       const ativo = await ativoResp.json();
@@ -198,7 +266,7 @@ document.getElementById('trimestreSelect').addEventListener('change', async func
   const tid = parseInt(this.value);
   if (!tid) {
     document.getElementById('conteudo').style.display = 'none';
-    document.getElementById('placeholder').style.display = '';
+    document.getElementById('placeholder').style.display = 'block';
     return;
   }
   await carregarDashboard(tid);
@@ -216,182 +284,234 @@ async function carregarDashboard(trimestreId) {
     const data = await resp.json();
 
     document.getElementById('placeholder').style.display = 'none';
-    document.getElementById('conteudo').style.display = '';
+    document.getElementById('conteudo').style.display = 'block';
 
-    renderizarGrafico(data.historico_presenca);
-    renderizarRanking(data.ranking_turmas);
-    renderizarSumidos(data.alunos_sumidos);
+    renderizarGrafico(data.historico_presenca || []);
+    renderizarRanking(data.ranking_turmas || []);
+    renderizarDestaques(data);
+    renderizarRankingFinanceiro(data.ranking_ofertas || []);
+    renderizarNotaDez(data.alunos_nota_10 || []);
+    renderizarSumidos(data.alunos_sumidos || []);
   } catch (e) {
     console.error('[carregarDashboard]', e);
-    mostrarMsg('Erro: ' + e.message, 'danger');
+    mostrarMsg('Erro: ' + e.message);
   }
 }
 
 // ── Gráfico de Linha ──
 function renderizarGrafico(historico) {
   const wrap = document.getElementById('chartWrap');
-  const ph = document.getElementById('chartPlaceholder');
+  const ph   = document.getElementById('chartPlaceholder');
 
-  if (!historico.length) {
+  const semDados = !historico.length || historico.every(d => (d.total_chamadas || 0) === 0);
+  if (semDados) {
     wrap.style.display = 'none';
-    ph.style.display = '';
+    ph.style.display = 'block';
     return;
   }
-  wrap.style.display = '';
+  wrap.style.display = 'block';
   ph.style.display = 'none';
 
-  const labels = historico.map(d => {
+  if (typeof Chart === 'undefined') {
+    ph.innerHTML = '<span class="ph-icon">⚠️</span>Biblioteca de gráficos não carregada. Verifique a conexão.';
+    ph.style.display = 'block';
+    wrap.style.display = 'none';
+    return;
+  }
+
+  const labels     = historico.map(d => {
     const dt = new Date(d.domingo_data + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     return `${d.domingo_numero}º (${dt})`;
   });
-  const presentes = historico.map(d => d.total_presentes);
-  const registrados = historico.map(d => d.total_chamadas);
+  const presentes  = historico.map(d => d.total_presentes  || 0);
+  const registrados = historico.map(d => d.total_chamadas || 0);
 
-  if (chartInstance) chartInstance.destroy();
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
 
-  const ctx = document.getElementById('presencaChart').getContext('2d');
+  try {
+    const ctx = document.getElementById('presencaChart').getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 260);
+    grad.addColorStop(0, 'rgba(13,110,253,0.25)');
+    grad.addColorStop(1, 'rgba(13,110,253,0.00)');
 
-  const gradiente = ctx.createLinearGradient(0, 0, 0, 260);
-  gradiente.addColorStop(0, 'rgba(13,110,253,0.25)');
-  gradiente.addColorStop(1, 'rgba(13,110,253,0.0)');
-
-  chartInstance = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Presentes',
-          data: presentes,
-          borderColor: '#0d6efd',
-          backgroundColor: gradiente,
-          borderWidth: 2.5,
-          fill: true,
-          tension: 0.35,
-          pointBackgroundColor: '#0d6efd',
-          pointRadius: 4,
-          pointHoverRadius: 6,
-        },
-        {
-          label: 'Registrados na chamada',
-          data: registrados,
-          borderColor: '#adb5bd',
-          backgroundColor: 'transparent',
-          borderWidth: 1.5,
-          borderDash: [6, 4],
-          fill: false,
-          tension: 0.35,
-          pointBackgroundColor: '#adb5bd',
-          pointRadius: 3,
-          pointHoverRadius: 5,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: {
-          position: 'top',
-          labels: { font: { family: "'Segoe UI', system-ui, sans-serif", size: 12 }, usePointStyle: true },
-        },
-        tooltip: {
-          callbacks: {
-            afterBody(items) {
-              if (items.length === 2) {
-                const reg = items[1].raw;
-                const pres = items[0].raw;
-                const pct = reg > 0 ? ((pres / reg) * 100).toFixed(0) : '—';
-                return [`Frequência: ${pct}%`];
-              }
+    chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Presentes',
+            data: presentes,
+            borderColor: '#0d6efd',
+            backgroundColor: grad,
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: '#0d6efd',
+            pointRadius: 4,
+            pointHoverRadius: 6,
+          },
+          {
+            label: 'Registrados na chamada',
+            data: registrados,
+            borderColor: '#adb5bd',
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            borderDash: [6, 4],
+            fill: false,
+            tension: 0.35,
+            pointBackgroundColor: '#adb5bd',
+            pointRadius: 3,
+            pointHoverRadius: 5,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'top', labels: { font: { family: "'Segoe UI', system-ui", size: 12 }, usePointStyle: true } },
+          tooltip: {
+            callbacks: {
+              afterBody(items) {
+                if (items.length >= 2) {
+                  const reg = items[1].raw || 0;
+                  const pres = items[0].raw || 0;
+                  return [`Frequência: ${reg > 0 ? ((pres / reg) * 100).toFixed(0) : '—'}%`];
+                }
+              },
             },
           },
         },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: { precision: 0, font: { size: 11 } },
-          grid: { color: 'rgba(0,0,0,0.05)' },
-        },
-        x: {
-          ticks: { font: { size: 11 } },
-          grid: { display: false },
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0, font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+          x: { ticks: { font: { size: 11 } }, grid: { display: false } },
         },
       },
-    },
-  });
+    });
+  } catch (e) {
+    console.error('[Chart]', e);
+    ph.innerHTML = `<span class="ph-icon">⚠️</span>Erro ao renderizar gráfico: ${esc(e.message)}`;
+    ph.style.display = 'block';
+    wrap.style.display = 'none';
+  }
 }
 
-// ── Ranking de Turmas ──
+// ── Cards de destaque ──
+function renderizarDestaques(data) {
+  document.getElementById('hlOfertas').textContent =
+    formatarMoeda(data.total_acumulado_ofertas ?? 0);
+
+  const campeao = data.campeao_visitantes;
+  document.getElementById('hlCampeao').textContent = campeao || '—';
+  document.getElementById('hlCampeaoSub').textContent = campeao
+    ? 'turma com mais visitantes no trimestre'
+    : 'nenhum visitante registrado ainda';
+}
+
+// ── Ranking de Frequência ──
 function renderizarRanking(ranking) {
   const tbody = document.getElementById('rankingTbody');
   if (!ranking.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhuma chamada registrada neste trimestre.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhuma chamada registrada.</td></tr>';
     return;
   }
-
   tbody.innerHTML = ranking.map((t, i) => {
     const pos = i + 1;
     const cls = pos === 1 ? 'rank-1' : pos === 2 ? 'rank-2' : pos === 3 ? 'rank-3' : 'rank-other';
     const cor = t.media_frequencia >= 75 ? '#198754' : t.media_frequencia >= 50 ? '#fd7e14' : '#dc3545';
-    const pct = Math.min(t.media_frequencia, 100);
-    return `
-      <tr>
-        <td><span class="rank-num ${cls}">${pos}</span></td>
-        <td><strong>${esc(t.turma_nome)}</strong></td>
-        <td>
-          <div class="freq-wrap">
-            <div class="freq-track">
-              <div class="freq-fill" style="width:${pct}%;background:${cor};"></div>
-            </div>
-            <span class="freq-pct" style="color:${cor};">${t.media_frequencia.toFixed(1)}%</span>
-          </div>
-        </td>
-        <td class="num">${t.total_domingos_com_chamada}</td>
-      </tr>`;
+    const pct = Math.min(t.media_frequencia || 0, 100);
+    return `<tr>
+      <td><span class="rank-num ${cls}">${pos}</span></td>
+      <td><strong>${esc(t.turma_nome)}</strong></td>
+      <td>
+        <div class="freq-wrap">
+          <div class="freq-track"><div class="freq-fill" style="width:${pct}%;background:${cor};"></div></div>
+          <span class="freq-pct" style="color:${cor};">${(t.media_frequencia || 0).toFixed(1)}%</span>
+        </div>
+      </td>
+      <td class="num">${t.total_domingos_com_chamada}</td>
+    </tr>`;
   }).join('');
+}
+
+// ── Ranking Financeiro ──
+function renderizarRankingFinanceiro(ranking) {
+  const tbody = document.getElementById('rankingOfertasTbody');
+  if (!ranking.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="3">Nenhum fechamento registrado.</td></tr>';
+    return;
+  }
+  const maxVal = Math.max(...ranking.map(r => parseFloat(r.total_ofertas || 0)), 0.01);
+  tbody.innerHTML = ranking.map((t, i) => {
+    const pos   = i + 1;
+    const cls   = pos === 1 ? 'rank-1' : pos === 2 ? 'rank-2' : pos === 3 ? 'rank-3' : 'rank-other';
+    const valor = parseFloat(t.total_ofertas || 0);
+    const pct   = (valor / maxVal) * 100;
+    return `<tr>
+      <td><span class="rank-num ${cls}">${pos}</span></td>
+      <td><strong>${esc(t.turma_nome)}</strong></td>
+      <td>
+        <div class="freq-wrap">
+          <div class="freq-track"><div class="freq-fill" style="width:${pct}%;background:#198754;"></div></div>
+          <span class="freq-pct" style="color:#198754;">${formatarMoeda(valor)}</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Alunos Nota 10 ──
+function renderizarNotaDez(lista) {
+  const container = document.getElementById('nota10Conteudo');
+  if (!lista.length) {
+    container.innerHTML = '<div class="all-ok">📋 Nenhum aluno com presença 100% ainda. Continue registrando chamadas!</div>';
+    return;
+  }
+  const linhas = lista.map((a, i) => `
+    <tr>
+      <td><span class="rank-num ${i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-other'}">${i + 1}</span></td>
+      <td><strong>${esc(a.aluno_nome)}</strong></td>
+      <td>${esc(a.turma_nome)}</td>
+      <td class="num"><span class="badge-domingos">✅ ${a.total_domingos}</span></td>
+    </tr>`).join('');
+  container.innerHTML = `
+    <table>
+      <thead><tr>
+        <th style="width:36px;">#</th>
+        <th>Aluno</th>
+        <th>Turma</th>
+        <th class="num">Domingos</th>
+      </tr></thead>
+      <tbody>${linhas}</tbody>
+    </table>`;
 }
 
 // ── Alunos Sumidos ──
 function renderizarSumidos(sumidos) {
   const container = document.getElementById('sumidosConteudo');
-
   if (!sumidos.length) {
-    container.innerHTML = `
-      <div class="all-ok">
-        ✅ Nenhum aluno com 3 ou mais faltas consecutivas. Turmas em dia!
-      </div>`;
+    container.innerHTML = '<div class="all-ok">✅ Nenhum aluno com 3 ou mais faltas consecutivas. Turmas em dia!</div>';
     return;
   }
-
   const linhas = sumidos.map(a => {
-    const badgeCls = a.faltas_consecutivas >= 5 ? 'badge-5p' : a.faltas_consecutivas === 4 ? 'badge-4' : 'badge-3';
+    const cls = a.faltas_consecutivas >= 5 ? 'badge-5p' : a.faltas_consecutivas === 4 ? 'badge-4' : 'badge-3';
     const tel = a.telefone
       ? `<a href="tel:${esc(a.telefone)}" style="color:inherit;">${esc(a.telefone)}</a>`
       : '<span style="color:var(--muted)">—</span>';
-    return `
-      <tr>
-        <td><strong>${esc(a.aluno_nome)}</strong></td>
-        <td>${esc(a.turma_nome)}</td>
-        <td>${tel}</td>
-        <td class="num">
-          <span class="badge-faltas ${badgeCls}">⚠️ ${a.faltas_consecutivas}</span>
-        </td>
-      </tr>`;
+    return `<tr>
+      <td><strong>${esc(a.aluno_nome)}</strong></td>
+      <td>${esc(a.turma_nome)}</td>
+      <td>${tel}</td>
+      <td class="num"><span class="badge-faltas ${cls}">⚠️ ${a.faltas_consecutivas}</span></td>
+    </tr>`;
   }).join('');
-
   container.innerHTML = `
     <table>
-      <thead>
-        <tr>
-          <th>Aluno</th>
-          <th>Turma</th>
-          <th>Telefone</th>
-          <th class="num">Faltas Seguidas</th>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th>Aluno</th><th>Turma</th><th>Telefone</th><th class="num">Faltas Seguidas</th>
+      </tr></thead>
       <tbody>${linhas}</tbody>
     </table>`;
 }
@@ -400,10 +520,15 @@ function renderizarSumidos(sumidos) {
 function esc(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-function mostrarMsg(texto, tipo) {
+
+function formatarMoeda(valor) {
+  const n = parseFloat(valor || 0);
+  return 'R$ ' + n.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function mostrarMsg(texto) {
   const m = document.getElementById('msg');
   m.textContent = texto;
-  m.className = 'alert alert-' + tipo;
   m.style.display = 'block';
 }
 function esconderMsg() { document.getElementById('msg').style.display = 'none'; }
