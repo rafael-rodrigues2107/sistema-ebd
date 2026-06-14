@@ -176,7 +176,10 @@
 <script>
 // ── Guarda de acesso: exige login ──
 (function () {
-  if (!localStorage.getItem('ebd_token')) { window.location.replace('/login.html'); }
+  if (!localStorage.getItem('ebd_token')) {
+    localStorage.clear();
+    window.location.replace('/login.html');
+  }
 })();
 
 // ── Estado global ──
@@ -190,7 +193,7 @@ function _authH() {
 }
 
 function fazerLogout() {
-  ['ebd_token','ebd_role','ebd_nome','ebd_turma_id'].forEach(k => localStorage.removeItem(k));
+  localStorage.clear();
   window.location.replace('/login.html');
 }
 

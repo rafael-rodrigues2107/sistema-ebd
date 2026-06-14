@@ -318,10 +318,10 @@
 (function () {
   const token = localStorage.getItem('ebd_token');
   const role  = localStorage.getItem('ebd_role');
-  if (!token) { window.location.replace('/login.html'); }
-  else if (role !== 'admin') {
-    alert('Acesso negado. Esta área é exclusiva para administradores.');
-    window.location.replace('/');
+  if (!token || role !== 'admin') {
+    localStorage.clear();
+    if (role && role !== 'admin') alert('Acesso negado. Esta área é exclusiva para administradores.');
+    window.location.replace('/login.html');
   }
 })();
 
@@ -640,10 +640,8 @@ async function verificarAuth() {
 }
 
 function logout() {
-  localStorage.removeItem('ebd_token');
-  localStorage.removeItem('ebd_role');
-  localStorage.removeItem('ebd_nome');
-  window.location.reload();
+  localStorage.clear();
+  window.location.replace('/login.html');
 }
 
 // ═══════════════════════════════════════════════════════════════

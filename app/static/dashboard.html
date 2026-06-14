@@ -121,10 +121,11 @@
   <!-- Topbar -->
   <div class="topbar">
     <h1>📈 Dashboard da Liderança — EBD</h1>
-    <div style="display:flex;gap:8px;">
+    <div style="display:flex;gap:8px;align-items:center;">
       <a href="/" class="nav-link">📋 Chamada</a>
       <a href="/fechamento.html" class="nav-link">📊 Fechamento</a>
       <a href="/cadastro.html" class="nav-link">⚙️ Cadastros</a>
+      <button onclick="fazerLogout()" class="nav-link" style="cursor:pointer;background:transparent;">Sair</button>
     </div>
   </div>
 
@@ -241,12 +242,17 @@
 (function () {
   const token = localStorage.getItem('ebd_token');
   const role  = localStorage.getItem('ebd_role');
-  if (!token) { window.location.replace('/login.html'); }
-  else if (role !== 'admin') {
-    alert('Acesso negado. Esta área é exclusiva para administradores.');
-    window.location.replace('/');
+  if (!token || role !== 'admin') {
+    localStorage.clear();
+    if (role && role !== 'admin') alert('Acesso negado. Esta área é exclusiva para administradores.');
+    window.location.replace('/login.html');
   }
 })();
+
+function fazerLogout() {
+  localStorage.clear();
+  window.location.replace('/login.html');
+}
 
 let chartInstance = null;
 

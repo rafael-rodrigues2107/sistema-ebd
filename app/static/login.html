@@ -62,11 +62,8 @@
 </div>
 
 <script>
-// Se já está logado como admin, vai direto para cadastro
-const tokenSalvo = localStorage.getItem('ebd_token');
-if (tokenSalvo) {
-  window.location.replace('/cadastro.html');
-}
+// Sessão anterior limpa ao acessar a tela de login — evita loops de credenciais antigas
+localStorage.clear();
 
 document.getElementById('senha').addEventListener('keydown', e => {
   if (e.key === 'Enter') fazerLogin();
@@ -103,7 +100,8 @@ async function fazerLogin() {
     localStorage.setItem('ebd_nome',     data.nome);
     localStorage.setItem('ebd_turma_id', data.turma_id ?? '');
 
-    window.location.replace('/cadastro.html');
+    // Professores vão para a chamada; administradores vão para os cadastros
+    window.location.replace(data.role === 'professor' ? '/' : '/cadastro.html');
   } catch (e) {
     mostrarErro(e.message);
     btn.disabled = false;
