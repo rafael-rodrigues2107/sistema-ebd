@@ -337,6 +337,7 @@ async function carregarTurmas() {
     turmasCache = await resp.json();
     renderizarTurmas(turmasCache);
     popularSelectTurmas(turmasCache);
+    popularSelectTurmasUsuario();
   } catch {
     document.getElementById('turmasTbody').innerHTML =
       '<tr class="empty-row"><td colspan="5">Erro ao carregar turmas.</td></tr>';
@@ -733,7 +734,10 @@ function editarUsuario(id, nome, username, role, turmaId) {
   document.getElementById('uNome').value = nome;
   document.getElementById('uUsername').value = username;
   document.getElementById('uRole').value = role;
-  document.getElementById('uTurma').value = turmaId ?? '';
+  // Repopula as opções a partir do cache antes de setar o valor
+  // (garante que a opção correspondente ao turmaId exista no DOM)
+  popularSelectTurmasUsuario();
+  document.getElementById('uTurma').value = turmaId != null ? String(turmaId) : '';
   document.getElementById('uSenha').value = '';
   document.getElementById('uSenha').placeholder = 'Deixe em branco para manter a atual';
   document.getElementById('formUsuarioTitulo').textContent = '✏️ Editar Usuário';
