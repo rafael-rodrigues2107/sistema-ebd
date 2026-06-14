@@ -34,8 +34,7 @@ class TurmaRead(BaseModel):
 class TrimestreCreate(BaseModel):
     ano: int = Field(..., ge=2020, le=2100)
     numero: int = Field(..., ge=1, le=4)
-    data_inicio: date
-    data_fim: date
+    ativo: bool = True
 
 
 class TrimestreRead(BaseModel):
@@ -105,6 +104,17 @@ class MatriculaRead(BaseModel):
     ativo: bool
 
     model_config = {"from_attributes": True}
+
+
+class MatriculaDetalhadaRead(BaseModel):
+    id: int
+    aluno_id: int
+    aluno_nome: str
+    turma_id: int
+    turma_nome: str
+    trimestre_id: int
+    data_matricula: date
+    ativo: bool
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -177,6 +187,73 @@ class SaveChamadaRequest(BaseModel):
     chamadas: list[ChamadaAlunoItem] = []
     visitantes: list[ChamadaVisitanteItem] = []
     fechamento: FechamentoCreate
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Dashboard da Liderança
+# ═══════════════════════════════════════════════════════════════════════════
+class DomingoPresencaItem(BaseModel):
+    domingo_numero: int
+    domingo_data: date
+    total_presentes: int
+    total_chamadas: int
+
+
+class TurmaRankingItem(BaseModel):
+    turma_id: int
+    turma_nome: str
+    media_frequencia: float
+    total_domingos_com_chamada: int
+
+
+class AlunoSumidoItem(BaseModel):
+    aluno_id: int
+    aluno_nome: str
+    telefone: Optional[str]
+    turma_nome: str
+    faltas_consecutivas: int
+
+
+class DashboardRead(BaseModel):
+    trimestre_id: int
+    historico_presenca: list[DomingoPresencaItem]
+    ranking_turmas: list[TurmaRankingItem]
+    alunos_sumidos: list[AlunoSumidoItem]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Fechamento Consolidado do Dia
+# ═══════════════════════════════════════════════════════════════════════════
+class TurmaResumoFechamento(BaseModel):
+    turma_id: int
+    turma_nome: str
+    total_matriculados: int
+    total_presentes: int
+    total_ausentes: int
+    total_visitantes: int
+    total_biblias: int
+    total_revistas: int
+    valor_ofertas: Decimal
+
+
+class FechamentoDiaRead(BaseModel):
+    domingo_id: int
+    domingo_data: date
+    domingo_numero: int
+    trimestre_ano: int
+    trimestre_numero: int
+    total_matriculados_trimestre: int
+    total_presentes: int
+    total_visitantes: int
+    total_biblias: int
+    total_revistas: int
+    total_ofertas: Decimal
+    por_turma: list[TurmaResumoFechamento]
+
+
+class ConfirmarFechamentoDiaCreate(BaseModel):
+    domingo_id: int
+    observacoes: Optional[str] = None
 
 
 # ═══════════════════════════════════════════════════════════════════════════

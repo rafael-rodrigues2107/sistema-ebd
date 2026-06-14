@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fechamento EBD</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card: #fff;
+    --border: #dde1e6;
+    --text: #212529;
+    --muted: #6c757d;
+    --primary: #0d6efd;
+    --success: #198754;
+    --danger: #dc3545;
+    --warning: #ffc107;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 24px; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 8px; }
+  h1 { font-size: 1.5rem; color: var(--primary); }
+  h2 { font-size: 1.1rem; margin-bottom: 14px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+  .nav-link { font-size: .85rem; color: var(--muted); text-decoration: none; border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; }
+  .nav-link:hover { background: #f0f0f0; }
+
+  /* Seletor */
+  .filter-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+  .field { flex: 1; min-width: 160px; }
+  .field label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 4px; color: var(--muted); }
+  .field select, .field input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; }
+  .field select:focus, .field input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13,110,253,.15); }
+
+  /* Cards de destaque */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+  @media (max-width: 700px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 400px) { .stats-grid { grid-template-columns: 1fr; } }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 16px; text-align: center; }
+  .stat-card .stat-value { font-size: 2.2rem; font-weight: 700; line-height: 1.1; margin: 6px 0 4px; }
+  .stat-card .stat-label { font-size: .75rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  .stat-card.blue   .stat-value { color: var(--primary); }
+  .stat-card.green  .stat-value { color: var(--success); }
+  .stat-card.orange .stat-value { color: #fd7e14; }
+  .stat-card.teal   .stat-value { color: #0dcaf0; }
+
+  /* Info bar */
+  .info-bar { display: flex; gap: 24px; flex-wrap: wrap; padding: 12px 16px; background: #f0f4ff; border: 1px solid #c6d3f7; border-radius: 8px; margin-bottom: 20px; font-size: .9rem; }
+  .info-bar span { color: var(--muted); }
+  .info-bar strong { color: var(--text); }
+
+  /* Tabela */
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: left; font-size: .92rem; }
+  th { background: #f8f9fa; font-weight: 600; color: var(--muted); font-size: .8rem; text-transform: uppercase; }
+  th.num, td.num { text-align: center; }
+  tbody tr:hover { background: #f8f9fa; }
+  .tfoot-total td { background: #f0f4ff; font-weight: 700; border-top: 2px solid var(--primary); }
+
+  /* Alerts */
+  .alert { padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-size: .9rem; display: none; }
+  .alert-info    { background: #cff4fc; border: 1px solid #b6effb; }
+  .alert-success { background: #d1e7dd; border: 1px solid #badbcc; }
+  .alert-danger  { background: #f8d7da; border: 1px solid #f5c2c7; }
+
+  /* Botões */
+  .btn { padding: 10px 24px; border: none; border-radius: 6px; font-size: .95rem; cursor: pointer; font-weight: 600; transition: background .15s; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: #0b5ed7; }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover { background: #157347; }
+  .btn-sm { padding: 6px 16px; font-size: .85rem; }
+
+  /* Badge */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .78rem; font-weight: 600; }
+  .badge-ok   { background: #d1e7dd; color: #0f5132; }
+  .badge-zero { background: #f8d7da; color: #842029; }
+
+  #resumo { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Topbar ── -->
+  <div class="topbar">
+    <h1>📊 Fechamento do Domingo — EBD</h1>
+    <div style="display:flex;gap:8px;">
+      <a href="/dashboard.html" class="nav-link">📈 Dashboard</a>
+      <a href="/" class="nav-link">📋 Chamada</a>
+      <a href="/cadastro.html" class="nav-link">⚙️ Cadastros</a>
+    </div>
+  </div>
+
+  <div id="msg" class="alert"></div>
+
+  <!-- ── Seletor de Domingo ── -->
+  <div class="card">
+    <div class="filter-row">
+      <div class="field">
+        <label for="trimestreSelect">Trimestre</label>
+        <select id="trimestreSelect"><option value="">Carregando…</option></select>
+      </div>
+      <div class="field">
+        <label for="domingoSelect">Domingo</label>
+        <select id="domingoSelect"><option value="">Selecione um trimestre…</option></select>
+      </div>
+      <div>
+        <button class="btn btn-primary" onclick="carregarResumo()">🔍 Carregar Resumo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Resumo (oculto até carregar) ── -->
+  <div id="resumo">
+
+    <!-- Info bar -->
+    <div class="info-bar" id="infoBar"></div>
+
+    <!-- Cards de destaque -->
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="stat-label">Presentes</div>
+        <div class="stat-value" id="statPresentes">—</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">Bíblias</div>
+        <div class="stat-value" id="statBiblias">—</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-label">Revistas</div>
+        <div class="stat-value" id="statRevistas">—</div>
+      </div>
+      <div class="stat-card teal">
+        <div class="stat-label">Ofertas do Dia</div>
+        <div class="stat-value" id="statOfertas">—</div>
+      </div>
+    </div>
+
+    <!-- Tabela por turma -->
+    <div class="card">
+      <h2>📋 Resumo por Classe</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Turma</th>
+            <th class="num">Matriculados</th>
+            <th class="num">Presentes</th>
+            <th class="num">Ausentes</th>
+            <th class="num">Visitantes</th>
+            <th class="num">Bíblias</th>
+            <th class="num">Revistas</th>
+            <th class="num">Ofertas (R$)</th>
+          </tr>
+        </thead>
+        <tbody id="resumoTbody"></tbody>
+        <tfoot>
+          <tr class="tfoot-total" id="resumoTfoot">
+            <td>Total Geral</td>
+            <td class="num" id="ftMatriculados">—</td>
+            <td class="num" id="ftPresentes">—</td>
+            <td class="num" id="ftAusentes">—</td>
+            <td class="num" id="ftVisitantes">—</td>
+            <td class="num" id="ftBiblias">—</td>
+            <td class="num" id="ftRevistas">—</td>
+            <td class="num" id="ftOfertas">—</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- Confirmação -->
+    <div class="card">
+      <h2>✅ Confirmar Fechamento</h2>
+      <p style="color:var(--muted);font-size:.9rem;margin-bottom:14px;">
+        Ao confirmar, os totais calculados serão salvos como fechamento oficial deste domingo para cada turma.
+      </p>
+      <div class="field" style="max-width:520px;margin-bottom:16px;">
+        <label for="obsInput">Observações <span style="font-weight:400">(opcional)</span></label>
+        <input type="text" id="obsInput" placeholder="Ex: Culto missionário, batismo…">
+      </div>
+      <button class="btn btn-success" onclick="confirmarFechamento()">💾 Confirmar Fechamento do Dia</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let domingoIdAtual = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  carregarTrimestres();
+});
+
+// ── Seletores ──
+
+async function carregarTrimestres() {
+  const sel = document.getElementById('trimestreSelect');
+  try {
+    const resp = await fetch('/api/trimestres/');
+    const lista = await resp.json();
+    sel.innerHTML = '<option value="">Selecione…</option>';
+    lista.forEach(t => {
+      sel.innerHTML += `<option value="${t.id}">${t.ano} — ${t.numero}º Trimestre</option>`;
+    });
+    const ativoResp = await fetch('/api/trimestres/ativo').catch(() => null);
+    if (ativoResp && ativoResp.ok) {
+      const ativo = await ativoResp.json();
+      sel.value = ativo.id;
+      await carregarDomingos(ativo.id);
+    }
+  } catch {
+    sel.innerHTML = '<option value="">Erro ao carregar</option>';
+  }
+}
+
+document.getElementById('trimestreSelect').addEventListener('change', function () {
+  const tid = parseInt(this.value);
+  document.getElementById('resumo').style.display = 'none';
+  domingoIdAtual = null;
+  if (tid) carregarDomingos(tid);
+});
+
+async function carregarDomingos(trimestreId) {
+  const sel = document.getElementById('domingoSelect');
+  sel.innerHTML = '<option value="">Carregando…</option>';
+  try {
+    const resp = await fetch(`/api/trimestres/${trimestreId}/domingos`);
+    const lista = await resp.json();
+    sel.innerHTML = '<option value="">Selecione…</option>';
+    lista.forEach(d => {
+      const data = new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR');
+      sel.innerHTML += `<option value="${d.id}">${d.numero}º Domingo — ${data}</option>`;
+    });
+  } catch {
+    sel.innerHTML = '<option value="">Erro ao carregar</option>';
+  }
+}
+
+// ── Carregar Resumo ──
+
+async function carregarResumo() {
+  const domingoId = parseInt(document.getElementById('domingoSelect').value);
+  if (!domingoId) {
+    mostrarMsg('Selecione um Trimestre e um Domingo.', 'info');
+    return;
+  }
+  domingoIdAtual = domingoId;
+
+  try {
+    const resp = await fetch(`/api/fechamento/${domingoId}`);
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.detail || 'Erro ao carregar resumo');
+    }
+    const data = await resp.json();
+    renderizarResumo(data);
+    esconderMsg();
+  } catch (e) {
+    console.error('[carregarResumo]', e);
+    mostrarMsg('Erro: ' + e.message, 'danger');
+  }
+}
+
+function renderizarResumo(data) {
+  // Info bar
+  const domingoData = new Date(data.domingo_data + 'T00:00:00').toLocaleDateString('pt-BR');
+  document.getElementById('infoBar').innerHTML = `
+    <span>📅 <strong>${domingoData}</strong> — ${data.domingo_numero}º Domingo</span>
+    <span>📆 Trimestre <strong>${data.trimestre_ano}/${data.trimestre_numero}º</strong></span>
+    <span>👥 Matriculados no trimestre: <strong>${data.total_matriculados_trimestre}</strong></span>
+    <span>🚶 Visitantes: <strong>${data.total_visitantes}</strong></span>
+  `;
+
+  // Cards de destaque
+  document.getElementById('statPresentes').textContent = data.total_presentes;
+  document.getElementById('statBiblias').textContent = data.total_biblias;
+  document.getElementById('statRevistas').textContent = data.total_revistas;
+  document.getElementById('statOfertas').textContent = 'R$ ' + parseFloat(data.total_ofertas).toFixed(2).replace('.', ',');
+
+  // Tabela por turma
+  const tbody = document.getElementById('resumoTbody');
+  if (!data.por_turma.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px;font-style:italic;">Nenhuma chamada registrada para este domingo.</td></tr>';
+  } else {
+    tbody.innerHTML = data.por_turma.map(t => `
+      <tr>
+        <td><strong>${esc(t.turma_nome)}</strong></td>
+        <td class="num">${t.total_matriculados}</td>
+        <td class="num">
+          <span class="badge ${t.total_presentes > 0 ? 'badge-ok' : 'badge-zero'}">${t.total_presentes}</span>
+        </td>
+        <td class="num">${t.total_ausentes}</td>
+        <td class="num">${t.total_visitantes}</td>
+        <td class="num">${t.total_biblias}</td>
+        <td class="num">${t.total_revistas}</td>
+        <td class="num">R$ ${parseFloat(t.valor_ofertas).toFixed(2).replace('.', ',')}</td>
+      </tr>
+    `).join('');
+  }
+
+  // Rodapé totais
+  const totMat  = data.por_turma.reduce((s, t) => s + t.total_matriculados, 0);
+  const totPres = data.por_turma.reduce((s, t) => s + t.total_presentes, 0);
+  const totAus  = data.por_turma.reduce((s, t) => s + t.total_ausentes, 0);
+  const totVis  = data.por_turma.reduce((s, t) => s + t.total_visitantes, 0);
+  const totBib  = data.por_turma.reduce((s, t) => s + t.total_biblias, 0);
+  const totRev  = data.por_turma.reduce((s, t) => s + t.total_revistas, 0);
+  const totOfe  = data.por_turma.reduce((s, t) => s + parseFloat(t.valor_ofertas), 0);
+  document.getElementById('ftMatriculados').textContent = totMat;
+  document.getElementById('ftPresentes').textContent = totPres;
+  document.getElementById('ftAusentes').textContent = totAus;
+  document.getElementById('ftVisitantes').textContent = totVis;
+  document.getElementById('ftBiblias').textContent = totBib;
+  document.getElementById('ftRevistas').textContent = totRev;
+  document.getElementById('ftOfertas').textContent = 'R$ ' + totOfe.toFixed(2).replace('.', ',');
+
+  document.getElementById('resumo').style.display = 'block';
+}
+
+// ── Confirmar Fechamento ──
+
+async function confirmarFechamento() {
+  if (!domingoIdAtual) {
+    mostrarMsg('Carregue o resumo de um domingo antes de confirmar.', 'info');
+    return;
+  }
+
+  const observacoes = document.getElementById('obsInput').value.trim() || null;
+
+  try {
+    const resp = await fetch('/api/fechamento/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ domingo_id: domingoIdAtual, observacoes }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.detail || 'Erro ao confirmar');
+    }
+    const result = await resp.json();
+    mostrarMsg(`✅ Fechamento confirmado para ${result.turmas_fechadas} turma(s)!`, 'success');
+    await carregarResumo(); // recarrega para refletir os dados salvos
+  } catch (e) {
+    console.error('[confirmarFechamento]', e);
+    mostrarMsg('Erro: ' + e.message, 'danger');
+  }
+}
+
+// ── Helpers ──
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function mostrarMsg(texto, tipo) {
+  const m = document.getElementById('msg');
+  m.textContent = texto;
+  m.className = 'alert alert-' + tipo;
+  m.style.display = 'block';
+  if (tipo !== 'danger') setTimeout(() => { m.style.display = 'none'; }, 6000);
+}
+
+function esconderMsg() {
+  document.getElementById('msg').style.display = 'none';
+}
+</script>
+</body>
+</html>

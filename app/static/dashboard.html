@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard EBD</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card: #fff;
+    --border: #dde1e6;
+    --text: #212529;
+    --muted: #6c757d;
+    --primary: #0d6efd;
+    --success: #198754;
+    --danger: #dc3545;
+    --warning: #ffc107;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 24px; }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  /* Topbar */
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 8px; }
+  h1 { font-size: 1.5rem; color: var(--primary); }
+  h2 { font-size: 1.1rem; margin-bottom: 14px; }
+  .nav-link { font-size: .85rem; color: var(--muted); text-decoration: none; border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; }
+  .nav-link:hover { background: #f0f0f0; }
+
+  /* Cards */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+
+  /* Filtro */
+  .filter-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+  .field { flex: 1; min-width: 160px; }
+  .field label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 4px; color: var(--muted); }
+  .field select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; }
+  .field select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13,110,253,.15); }
+
+  /* Alert */
+  .alert { padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-size: .9rem; display: none; }
+  .alert-info    { background: #cff4fc; border: 1px solid #b6effb; }
+  .alert-danger  { background: #f8d7da; border: 1px solid #f5c2c7; }
+
+  /* Tabela base */
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: left; font-size: .92rem; }
+  th { background: #f8f9fa; font-weight: 600; color: var(--muted); font-size: .8rem; text-transform: uppercase; }
+  th.num, td.num { text-align: center; }
+  tbody tr:hover { background: #f8f9fa; }
+  .empty-row td { text-align: center; color: var(--muted); font-style: italic; padding: 24px; }
+
+  /* Barra de frequência */
+  .freq-wrap { display: flex; align-items: center; gap: 10px; }
+  .freq-track { flex: 1; height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden; min-width: 80px; }
+  .freq-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+  .freq-pct { font-size: .85rem; font-weight: 700; min-width: 42px; text-align: right; }
+
+  /* Posição no ranking */
+  .rank-num { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-size: .8rem; font-weight: 700; }
+  .rank-1 { background: #ffd700; color: #7d5a00; }
+  .rank-2 { background: #c0c0c0; color: #4a4a4a; }
+  .rank-3 { background: #cd7f32; color: #5a3000; }
+  .rank-other { background: #e9ecef; color: var(--muted); }
+
+  /* Alunos sumidos — secção de aviso */
+  .warning-section { background: #fff8e1; border: 1px solid #ffe082; border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+  .warning-section h2 { color: #e65100; margin-bottom: 4px; }
+  .warning-section .subtitle { font-size: .85rem; color: #bf360c; margin-bottom: 14px; }
+  .warning-section table th { background: #fff3cd; color: #856404; }
+  .warning-section table tr:hover td { background: #fff9e8; }
+
+  /* Badge de faltas */
+  .badge-faltas { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 12px; font-size: .8rem; font-weight: 700; }
+  .badge-3  { background: #fff3cd; color: #856404; }
+  .badge-4  { background: #ffe0b2; color: #e65100; }
+  .badge-5p { background: #ffcdd2; color: #c62828; }
+
+  /* Empty state verde (sem sumidos) */
+  .all-ok { display: flex; align-items: center; gap: 12px; padding: 16px; background: #d1e7dd; border-radius: 8px; color: #0f5132; font-weight: 600; font-size: .95rem; }
+
+  /* Gráfico */
+  .chart-wrap { position: relative; height: 260px; }
+
+  /* Placeholders */
+  .placeholder { text-align: center; color: var(--muted); padding: 60px 20px; font-size: .95rem; }
+  .placeholder span { display: block; font-size: 2.5rem; margin-bottom: 10px; }
+
+  #conteudo { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <h1>📈 Dashboard da Liderança — EBD</h1>
+    <div style="display:flex;gap:8px;">
+      <a href="/" class="nav-link">📋 Chamada</a>
+      <a href="/fechamento.html" class="nav-link">📊 Fechamento</a>
+      <a href="/cadastro.html" class="nav-link">⚙️ Cadastros</a>
+    </div>
+  </div>
+
+  <div id="msg" class="alert"></div>
+
+  <!-- Filtro de Trimestre -->
+  <div class="card">
+    <div class="filter-row">
+      <div class="field">
+        <label for="trimestreSelect">Trimestre</label>
+        <select id="trimestreSelect"><option value="">Carregando…</option></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Placeholder enquanto não há dados -->
+  <div id="placeholder" class="card">
+    <div class="placeholder">
+      <span>📊</span>
+      Selecione um trimestre para visualizar o painel de liderança.
+    </div>
+  </div>
+
+  <!-- Conteúdo carregado -->
+  <div id="conteudo">
+
+    <!-- Gráfico de evolução de presenças -->
+    <div class="card">
+      <h2>📉 Evolução de Presenças — Domingo a Domingo</h2>
+      <div id="chartPlaceholder" class="placeholder" style="display:none;">
+        <span>📅</span>
+        Nenhuma chamada registrada ainda neste trimestre.
+      </div>
+      <div class="chart-wrap" id="chartWrap">
+        <canvas id="presencaChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Ranking de Turmas -->
+    <div class="card">
+      <h2>🏆 Ranking de Turmas — Frequência Média</h2>
+      <table id="rankingTable">
+        <thead>
+          <tr>
+            <th style="width:40px;">#</th>
+            <th>Turma</th>
+            <th>Frequência Média</th>
+            <th class="num">Domingos</th>
+          </tr>
+        </thead>
+        <tbody id="rankingTbody">
+          <tr class="empty-row"><td colspan="4">Nenhum dado disponível.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Alunos Sumidos -->
+    <div class="warning-section" id="sumidosSection">
+      <h2>⚠️ Alerta de Retenção — Alunos Ausentes há 3+ Domingos</h2>
+      <p class="subtitle">Alunos com matrícula ativa que acumulam 3 ou mais faltas consecutivas nos domingos mais recentes.</p>
+      <div id="sumidosConteudo"></div>
+    </div>
+
+  </div>
+
+</div>
+<script>
+let chartInstance = null;
+
+// ── Inicialização ──
+document.addEventListener('DOMContentLoaded', carregarTrimestres);
+
+async function carregarTrimestres() {
+  const sel = document.getElementById('trimestreSelect');
+  try {
+    const resp = await fetch('/api/trimestres/');
+    const lista = await resp.json();
+    sel.innerHTML = '<option value="">Selecione um trimestre…</option>';
+    lista.forEach(t => {
+      sel.innerHTML += `<option value="${t.id}">${t.ano} — ${t.numero}º Trimestre</option>`;
+    });
+
+    const ativoResp = await fetch('/api/trimestres/ativo').catch(() => null);
+    if (ativoResp && ativoResp.ok) {
+      const ativo = await ativoResp.json();
+      sel.value = ativo.id;
+      await carregarDashboard(ativo.id);
+    }
+  } catch {
+    sel.innerHTML = '<option value="">Erro ao carregar</option>';
+  }
+}
+
+document.getElementById('trimestreSelect').addEventListener('change', async function () {
+  const tid = parseInt(this.value);
+  if (!tid) {
+    document.getElementById('conteudo').style.display = 'none';
+    document.getElementById('placeholder').style.display = '';
+    return;
+  }
+  await carregarDashboard(tid);
+});
+
+// ── Carregar e renderizar ──
+async function carregarDashboard(trimestreId) {
+  esconderMsg();
+  try {
+    const resp = await fetch(`/api/dashboard/dados?trimestre_id=${trimestreId}`);
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.detail || 'Erro ao carregar dashboard');
+    }
+    const data = await resp.json();
+
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('conteudo').style.display = '';
+
+    renderizarGrafico(data.historico_presenca);
+    renderizarRanking(data.ranking_turmas);
+    renderizarSumidos(data.alunos_sumidos);
+  } catch (e) {
+    console.error('[carregarDashboard]', e);
+    mostrarMsg('Erro: ' + e.message, 'danger');
+  }
+}
+
+// ── Gráfico de Linha ──
+function renderizarGrafico(historico) {
+  const wrap = document.getElementById('chartWrap');
+  const ph = document.getElementById('chartPlaceholder');
+
+  if (!historico.length) {
+    wrap.style.display = 'none';
+    ph.style.display = '';
+    return;
+  }
+  wrap.style.display = '';
+  ph.style.display = 'none';
+
+  const labels = historico.map(d => {
+    const dt = new Date(d.domingo_data + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    return `${d.domingo_numero}º (${dt})`;
+  });
+  const presentes = historico.map(d => d.total_presentes);
+  const registrados = historico.map(d => d.total_chamadas);
+
+  if (chartInstance) chartInstance.destroy();
+
+  const ctx = document.getElementById('presencaChart').getContext('2d');
+
+  const gradiente = ctx.createLinearGradient(0, 0, 0, 260);
+  gradiente.addColorStop(0, 'rgba(13,110,253,0.25)');
+  gradiente.addColorStop(1, 'rgba(13,110,253,0.0)');
+
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Presentes',
+          data: presentes,
+          borderColor: '#0d6efd',
+          backgroundColor: gradiente,
+          borderWidth: 2.5,
+          fill: true,
+          tension: 0.35,
+          pointBackgroundColor: '#0d6efd',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+        {
+          label: 'Registrados na chamada',
+          data: registrados,
+          borderColor: '#adb5bd',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          borderDash: [6, 4],
+          fill: false,
+          tension: 0.35,
+          pointBackgroundColor: '#adb5bd',
+          pointRadius: 3,
+          pointHoverRadius: 5,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { font: { family: "'Segoe UI', system-ui, sans-serif", size: 12 }, usePointStyle: true },
+        },
+        tooltip: {
+          callbacks: {
+            afterBody(items) {
+              if (items.length === 2) {
+                const reg = items[1].raw;
+                const pres = items[0].raw;
+                const pct = reg > 0 ? ((pres / reg) * 100).toFixed(0) : '—';
+                return [`Frequência: ${pct}%`];
+              }
+            },
+          },
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0, font: { size: 11 } },
+          grid: { color: 'rgba(0,0,0,0.05)' },
+        },
+        x: {
+          ticks: { font: { size: 11 } },
+          grid: { display: false },
+        },
+      },
+    },
+  });
+}
+
+// ── Ranking de Turmas ──
+function renderizarRanking(ranking) {
+  const tbody = document.getElementById('rankingTbody');
+  if (!ranking.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhuma chamada registrada neste trimestre.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = ranking.map((t, i) => {
+    const pos = i + 1;
+    const cls = pos === 1 ? 'rank-1' : pos === 2 ? 'rank-2' : pos === 3 ? 'rank-3' : 'rank-other';
+    const cor = t.media_frequencia >= 75 ? '#198754' : t.media_frequencia >= 50 ? '#fd7e14' : '#dc3545';
+    const pct = Math.min(t.media_frequencia, 100);
+    return `
+      <tr>
+        <td><span class="rank-num ${cls}">${pos}</span></td>
+        <td><strong>${esc(t.turma_nome)}</strong></td>
+        <td>
+          <div class="freq-wrap">
+            <div class="freq-track">
+              <div class="freq-fill" style="width:${pct}%;background:${cor};"></div>
+            </div>
+            <span class="freq-pct" style="color:${cor};">${t.media_frequencia.toFixed(1)}%</span>
+          </div>
+        </td>
+        <td class="num">${t.total_domingos_com_chamada}</td>
+      </tr>`;
+  }).join('');
+}
+
+// ── Alunos Sumidos ──
+function renderizarSumidos(sumidos) {
+  const container = document.getElementById('sumidosConteudo');
+
+  if (!sumidos.length) {
+    container.innerHTML = `
+      <div class="all-ok">
+        ✅ Nenhum aluno com 3 ou mais faltas consecutivas. Turmas em dia!
+      </div>`;
+    return;
+  }
+
+  const linhas = sumidos.map(a => {
+    const badgeCls = a.faltas_consecutivas >= 5 ? 'badge-5p' : a.faltas_consecutivas === 4 ? 'badge-4' : 'badge-3';
+    const tel = a.telefone
+      ? `<a href="tel:${esc(a.telefone)}" style="color:inherit;">${esc(a.telefone)}</a>`
+      : '<span style="color:var(--muted)">—</span>';
+    return `
+      <tr>
+        <td><strong>${esc(a.aluno_nome)}</strong></td>
+        <td>${esc(a.turma_nome)}</td>
+        <td>${tel}</td>
+        <td class="num">
+          <span class="badge-faltas ${badgeCls}">⚠️ ${a.faltas_consecutivas}</span>
+        </td>
+      </tr>`;
+  }).join('');
+
+  container.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Aluno</th>
+          <th>Turma</th>
+          <th>Telefone</th>
+          <th class="num">Faltas Seguidas</th>
+        </tr>
+      </thead>
+      <tbody>${linhas}</tbody>
+    </table>`;
+}
+
+// ── Helpers ──
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function mostrarMsg(texto, tipo) {
+  const m = document.getElementById('msg');
+  m.textContent = texto;
+  m.className = 'alert alert-' + tipo;
+  m.style.display = 'block';
+}
+function esconderMsg() { document.getElementById('msg').style.display = 'none'; }
+</script>
+</body>
+</html>
