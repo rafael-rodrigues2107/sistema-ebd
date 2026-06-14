@@ -218,11 +218,12 @@
       <table>
         <thead>
           <tr>
-            <th>Turma</th>
+            <th>Classe</th>
             <th class="num">Matriculados</th>
-            <th class="num">Presentes</th>
             <th class="num">Ausentes</th>
+            <th class="num">Presentes</th>
             <th class="num">Visitantes</th>
+            <th class="num">Total</th>
             <th class="num">Bíblias</th>
             <th class="num">Revistas</th>
             <th class="num">Ofertas (R$)</th>
@@ -233,9 +234,10 @@
           <tr class="tfoot-total" id="resumoTfoot">
             <td>Total Geral</td>
             <td class="num" id="ftMatriculados">—</td>
-            <td class="num" id="ftPresentes">—</td>
             <td class="num" id="ftAusentes">—</td>
+            <td class="num" id="ftPresentes">—</td>
             <td class="num" id="ftVisitantes">—</td>
+            <td class="num" id="ftTotal">—</td>
             <td class="num" id="ftBiblias">—</td>
             <td class="num" id="ftRevistas">—</td>
             <td class="num" id="ftOfertas">—</td>
@@ -387,39 +389,44 @@ function renderizarResumo(data) {
   // Tabela por turma
   const tbody = document.getElementById('resumoTbody');
   if (!data.por_turma.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px;font-style:italic;">Nenhuma chamada registrada para este domingo.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px;font-style:italic;">Nenhuma chamada registrada para este domingo.</td></tr>';
   } else {
-    tbody.innerHTML = data.por_turma.map(t => `
+    tbody.innerHTML = data.por_turma.map(t => {
+      const totalPessoas = t.total_presentes + t.total_visitantes;
+      return `
       <tr>
         <td><strong>${esc(t.turma_nome)}</strong></td>
         <td class="num">${t.total_matriculados}</td>
+        <td class="num">${t.total_ausentes}</td>
         <td class="num">
           <span class="badge ${t.total_presentes > 0 ? 'badge-ok' : 'badge-zero'}">${t.total_presentes}</span>
         </td>
-        <td class="num">${t.total_ausentes}</td>
         <td class="num">${t.total_visitantes}</td>
+        <td class="num"><strong>${totalPessoas}</strong></td>
         <td class="num">${t.total_biblias}</td>
         <td class="num">${t.total_revistas}</td>
         <td class="num">R$ ${parseFloat(t.valor_ofertas).toFixed(2).replace('.', ',')}</td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
   }
 
   // Rodapé totais
   const totMat  = data.por_turma.reduce((s, t) => s + t.total_matriculados, 0);
-  const totPres = data.por_turma.reduce((s, t) => s + t.total_presentes, 0);
   const totAus  = data.por_turma.reduce((s, t) => s + t.total_ausentes, 0);
+  const totPres = data.por_turma.reduce((s, t) => s + t.total_presentes, 0);
   const totVis  = data.por_turma.reduce((s, t) => s + t.total_visitantes, 0);
+  const totTotal = totPres + totVis;
   const totBib  = data.por_turma.reduce((s, t) => s + t.total_biblias, 0);
   const totRev  = data.por_turma.reduce((s, t) => s + t.total_revistas, 0);
   const totOfe  = data.por_turma.reduce((s, t) => s + parseFloat(t.valor_ofertas), 0);
   document.getElementById('ftMatriculados').textContent = totMat;
-  document.getElementById('ftPresentes').textContent = totPres;
-  document.getElementById('ftAusentes').textContent = totAus;
-  document.getElementById('ftVisitantes').textContent = totVis;
-  document.getElementById('ftBiblias').textContent = totBib;
-  document.getElementById('ftRevistas').textContent = totRev;
-  document.getElementById('ftOfertas').textContent = 'R$ ' + totOfe.toFixed(2).replace('.', ',');
+  document.getElementById('ftAusentes').textContent     = totAus;
+  document.getElementById('ftPresentes').textContent    = totPres;
+  document.getElementById('ftVisitantes').textContent   = totVis;
+  document.getElementById('ftTotal').textContent        = totTotal;
+  document.getElementById('ftBiblias').textContent      = totBib;
+  document.getElementById('ftRevistas').textContent     = totRev;
+  document.getElementById('ftOfertas').textContent      = 'R$ ' + totOfe.toFixed(2).replace('.', ',');
 
   document.getElementById('resumo').style.display = 'block';
 }

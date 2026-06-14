@@ -131,9 +131,11 @@
       <button class="btn btn-primary" onclick="salvarTurma()">Salvar Turma</button>
     </div>
 
-    <!-- Coluna 2: Novo Aluno -->
+    <!-- Coluna 2: Novo Aluno / Editar Aluno -->
     <div class="card">
-      <h2>➕ Novo Aluno</h2>
+      <h2 id="formAlunoTitulo">➕ Novo Aluno</h2>
+      <input type="hidden" id="alunoEditId">
+
       <div class="field">
         <label for="alunoNome">Nome Completo *</label>
         <input type="text" id="alunoNome" placeholder="Nome do aluno" maxlength="200">
@@ -142,19 +144,32 @@
         <label for="alunoTelefone">Telefone <span style="font-weight:400">(opcional)</span></label>
         <input type="text" id="alunoTelefone" placeholder="(00) 00000-0000" maxlength="30">
       </div>
-      <div class="field">
-        <label for="alunoTurmaSelect">Matricular na Turma</label>
+
+      <!-- Turma: visível em criação e edição (label muda conforme o modo) -->
+      <div class="field" id="campoTurmaAluno">
+        <label id="lblTurmaAluno" for="alunoTurmaSelect">Matricular na Turma</label>
         <select id="alunoTurmaSelect">
           <option value="">Selecione (opcional)…</option>
         </select>
       </div>
-      <div class="field">
+      <!-- Trimestre: visível apenas no modo criação -->
+      <div class="field" id="campoTrimestreAluno">
         <label for="alunoTrimestreSelect">Trimestre da Matrícula</label>
         <select id="alunoTrimestreSelect">
           <option value="">Carregando…</option>
         </select>
       </div>
-      <button class="btn btn-primary" onclick="salvarAluno()">Salvar Aluno</button>
+
+      <!-- Status: visível apenas no modo edição -->
+      <div class="field-check" id="campoAlunoAtivo" style="display:none;">
+        <input type="checkbox" id="alunoAtivo" checked>
+        <label for="alunoAtivo">Aluno Ativo</label>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button class="btn btn-primary" id="btnSalvarAluno" onclick="salvarAluno()">Salvar Aluno</button>
+        <button class="btn" id="btnCancelarAluno" style="display:none;background:#e9ecef;color:var(--text);" onclick="cancelarEdicaoAluno()">Cancelar</button>
+      </div>
     </div>
 
     <!-- Coluna 3: Novo Trimestre -->
@@ -202,9 +217,28 @@
     </table>
   </div>
 
+  <!-- ── Tabela de Alunos Cadastrados (admin) ── -->
+  <div class="card" id="alunosCadastradosCard">
+    <h2>🎓 Alunos Cadastrados</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nome</th>
+          <th>Telefone</th>
+          <th>Status</th>
+          <th style="text-align:center;">Ações</th>
+        </tr>
+      </thead>
+      <tbody id="alunosCadastradosTbody">
+        <tr class="empty-row"><td colspan="5">Carregando…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
   <!-- ── Tabela de Alunos Matriculados ── -->
   <div class="card">
-    <h2>🎓 Alunos Matriculados</h2>
+    <h2>📋 Matrículas por Turma/Trimestre</h2>
     <table>
       <thead>
         <tr>
@@ -328,6 +362,7 @@
 // ── Estado ──
 let turmasCache = [];
 let trimestresCache = [];
+let matriculasCache = [];
 
 // ── Inicialização ──
 document.addEventListener('DOMContentLoaded', () => {
@@ -335,6 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
   carregarTurmas();
   carregarTrimestres();
   carregarMatriculas();
+  carregarAlunosCadastrados();
   verificarAuth();
 });
 
@@ -496,6 +532,7 @@ async function carregarMatriculas() {
   try {
     const resp = await fetch('/api/matriculas/');
     const matriculas = await resp.json();
+    matriculasCache = matriculas;          // cacheia para lookup do turma_id no editar
     renderizarMatriculas(matriculas);
   } catch {
     document.getElementById('matriculasTbody').innerHTML =
@@ -526,15 +563,35 @@ function formatarTrimestre(trimestreId) {
 }
 
 async function salvarAluno() {
-  const nome = document.getElementById('alunoNome').value.trim();
+  const editId  = document.getElementById('alunoEditId').value;
+  const nome    = document.getElementById('alunoNome').value.trim();
   const telefone = document.getElementById('alunoTelefone').value.trim() || null;
-  const turmaId = parseInt(document.getElementById('alunoTurmaSelect').value) || null;
-  const trimestreId = parseInt(document.getElementById('alunoTrimestreSelect').value) || null;
 
-  if (!nome) {
-    mostrarMsg('aluno', 'Informe o nome do aluno.', 'info');
+  if (!nome) { mostrarMsg('aluno', 'Informe o nome do aluno.', 'info'); return; }
+
+  // ── Modo edição: PUT ──
+  if (editId) {
+    const ativo     = document.getElementById('alunoAtivo').checked;
+    const turmaId   = parseInt(document.getElementById('alunoTurmaSelect').value) || null;
+    const payload   = { nome, telefone, ativo };
+    if (turmaId) payload.turma_id = turmaId;   // inclui apenas se selecionado
+    try {
+      const resp = await fetch(`/api/alunos/${editId}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify(payload),
+      });
+      if (!resp.ok) { const e = await resp.json(); throw new Error(e.detail || 'Erro ao atualizar'); }
+      mostrarMsg('aluno', '✅ Aluno atualizado com sucesso!', 'success');
+      limparFormAluno();
+      await Promise.all([carregarAlunosCadastrados(), carregarMatriculas()]);
+    } catch (e) { mostrarMsg('aluno', 'Erro: ' + e.message, 'danger'); }
     return;
   }
+
+  // ── Modo criação: POST + matrícula opcional ──
+  const turmaId     = parseInt(document.getElementById('alunoTurmaSelect').value) || null;
+  const trimestreId = parseInt(document.getElementById('alunoTrimestreSelect').value) || null;
 
   try {
     const alunoResp = await fetch('/api/alunos/', {
@@ -542,10 +599,7 @@ async function salvarAluno() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nome, telefone }),
     });
-    if (!alunoResp.ok) {
-      const err = await alunoResp.json();
-      throw new Error(err.detail || 'Erro ao salvar aluno');
-    }
+    if (!alunoResp.ok) { const e = await alunoResp.json(); throw new Error(e.detail || 'Erro ao salvar aluno'); }
     const aluno = await alunoResp.json();
 
     if (turmaId && trimestreId) {
@@ -555,26 +609,88 @@ async function salvarAluno() {
         body: JSON.stringify({ aluno_id: aluno.id, turma_id: turmaId, trimestre_id: trimestreId }),
       });
       if (!matResp.ok) {
-        const err = await matResp.json();
-        mostrarMsg('aluno', `✅ Aluno criado, mas matrícula falhou: ${err.detail}`, 'info');
+        const e = await matResp.json();
+        mostrarMsg('aluno', `✅ Aluno criado, mas matrícula falhou: ${e.detail}`, 'info');
         limparFormAluno();
-        await carregarMatriculas();
+        await Promise.all([carregarAlunosCadastrados(), carregarMatriculas()]);
         return;
       }
     }
 
     mostrarMsg('aluno', '✅ Aluno cadastrado com sucesso!', 'success');
     limparFormAluno();
-    await carregarMatriculas();
-  } catch (e) {
-    mostrarMsg('aluno', 'Erro: ' + e.message, 'danger');
-  }
+    await Promise.all([carregarAlunosCadastrados(), carregarMatriculas()]);
+  } catch (e) { mostrarMsg('aluno', 'Erro: ' + e.message, 'danger'); }
 }
 
 function limparFormAluno() {
+  document.getElementById('alunoEditId').value = '';
   document.getElementById('alunoNome').value = '';
   document.getElementById('alunoTelefone').value = '';
   document.getElementById('alunoTurmaSelect').value = '';
+  document.getElementById('lblTurmaAluno').textContent = 'Matricular na Turma';
+  document.getElementById('campoTrimestreAluno').style.display = '';
+  document.getElementById('campoAlunoAtivo').style.display = 'none';
+  document.getElementById('formAlunoTitulo').textContent = '➕ Novo Aluno';
+  document.getElementById('btnSalvarAluno').textContent = 'Salvar Aluno';
+  document.getElementById('btnCancelarAluno').style.display = 'none';
+}
+
+// ── Gestão de Alunos (editar / remover) ──
+
+async function carregarAlunosCadastrados() {
+  const tbody = document.getElementById('alunosCadastradosTbody');
+  try {
+    const resp = await fetch('/api/alunos/?incluir_inativos=true', { headers: authHeaders() });
+    if (!resp.ok) { tbody.innerHTML = '<tr class="empty-row"><td colspan="5">—</td></tr>'; return; }
+    const alunos = await resp.json();
+    if (!alunos.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Nenhum aluno cadastrado ainda.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = alunos.map(a => `
+      <tr>
+        <td>${a.id}</td>
+        <td><strong>${esc(a.nome)}</strong></td>
+        <td style="color:var(--muted);font-size:.88rem;">${esc(a.telefone || '—')}</td>
+        <td><span class="badge ${a.ativo ? 'badge-active' : 'badge-inactive'}">${a.ativo ? 'Ativo' : 'Inativo'}</span></td>
+        <td style="text-align:center;">
+          <button class="btn-xs btn-edit" onclick="editarAluno(${a.id},'${esc(a.nome)}','${esc(a.telefone || '')}',${a.ativo},${(() => { const m = matriculasCache.filter(m => m.aluno_id === a.id && m.ativo).sort((x,y) => y.trimestre_id - x.trimestre_id)[0]; return m ? m.turma_id : 'null'; })()})">Editar</button>
+          <button class="btn-xs btn-del" onclick="removerAluno(${a.id},'${esc(a.nome)}')" style="margin-left:4px;">Remover</button>
+        </td>
+      </tr>`).join('');
+  } catch {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Erro ao carregar.</td></tr>';
+  }
+}
+
+function editarAluno(id, nome, telefone, ativo, turmaId) {
+  document.getElementById('alunoEditId').value = id;
+  document.getElementById('alunoNome').value = nome;
+  document.getElementById('alunoTelefone').value = telefone;
+  document.getElementById('alunoAtivo').checked = ativo;
+  // Pré-preenche e exibe o seletor de turma; oculta o trimestre (irrelevante na edição)
+  document.getElementById('alunoTurmaSelect').value = turmaId ?? '';
+  document.getElementById('lblTurmaAluno').textContent = 'Alterar Turma (opcional)';
+  document.getElementById('campoTrimestreAluno').style.display = 'none';
+  document.getElementById('campoAlunoAtivo').style.display = '';
+  document.getElementById('formAlunoTitulo').textContent = '📝 Editar Aluno';
+  document.getElementById('btnSalvarAluno').textContent = 'Atualizar Aluno';
+  document.getElementById('btnCancelarAluno').style.display = '';
+  document.getElementById('formAlunoTitulo').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function cancelarEdicaoAluno() {
+  limparFormAluno();
+}
+
+async function removerAluno(id, nome) {
+  if (!confirm(`Inativar "${nome}"?\n\nO aluno será removido das chamadas futuras, mas o histórico de presença será preservado.`)) return;
+  try {
+    const resp = await fetch(`/api/alunos/${id}`, { method: 'DELETE', headers: authHeaders() });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.detail || 'Erro ao remover'); }
+    await Promise.all([carregarAlunosCadastrados(), carregarMatriculas()]);
+  } catch (e) { mostrarMsg('aluno', 'Erro: ' + e.message, 'danger'); }
 }
 
 // ═══════════════════════════════════════════════════════════════

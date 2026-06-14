@@ -87,6 +87,13 @@ class AlunoRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class AlunoUpdate(BaseModel):
+    nome: Optional[str] = Field(default=None, max_length=200)
+    telefone: Optional[str] = None
+    ativo: Optional[bool] = None
+    turma_id: Optional[int] = None
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Matrícula
 # ═══════════════════════════════════════════════════════════════════════════
