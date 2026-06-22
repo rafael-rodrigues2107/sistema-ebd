@@ -10,6 +10,8 @@ services:
       - ebd_data:/data
     expose:
       - "8000"
+    networks:
+      - ebd_net
 
   nginx:
     image: nginx:alpine
@@ -23,6 +25,8 @@ services:
       - certbot_certs:/etc/letsencrypt:ro
     depends_on:
       - app
+    networks:
+      - ebd_net
 
   certbot:
     image: certbot/certbot
@@ -35,6 +39,12 @@ services:
                certbot renew --webroot -w /var/www/certbot --quiet;
                sleep 12h & wait $${!};
              done"
+    networks:
+      - ebd_net
+
+networks:
+  ebd_net:
+    driver: bridge
 
 volumes:
   ebd_data:
