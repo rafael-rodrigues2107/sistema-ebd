@@ -674,6 +674,67 @@
   }
   body.has-banner { padding-top: calc(var(--nav-h) + 36px); }
 
+  /* ── Abas mobile (só em telas pequenas) ── */
+  .mobile-tabs {
+    display: none;
+  }
+  @media (max-width: 640px) {
+    .mobile-tabs {
+      display: flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .mobile-tab {
+      flex: 1;
+      padding: 11px 4px;
+      font-size: .78rem;
+      font-weight: 700;
+      font-family: inherit;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      transition: background .15s, color .15s;
+      position: relative;
+    }
+    .mobile-tab + .mobile-tab { border-left: 1px solid var(--border); }
+    .mobile-tab.active {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+    .mobile-tab .tab-icon { font-size: 1.1rem; }
+    .mobile-tab .tab-badge {
+      position: absolute;
+      top: 6px; right: calc(50% - 20px);
+      background: var(--primary);
+      color: #fff;
+      font-size: .6rem;
+      font-weight: 800;
+      border-radius: 10px;
+      padding: 1px 5px;
+      min-width: 16px;
+      text-align: center;
+      display: none;
+    }
+    .mobile-tab .tab-badge.visible { display: block; }
+
+    /* esconde seções inativas no mobile */
+    .painel-section { display: none; }
+    .painel-section.tab-active { display: block; }
+  }
+  /* no desktop todas as seções ficam visíveis */
+  @media (min-width: 641px) {
+    .painel-section { display: block !important; }
+  }
+
   /* ── Print ── */
   @media print {
     @page { size: A4 portrait; margin: 12mm; }
@@ -800,60 +861,87 @@
 
   <!-- Lista de alunos -->
   <div id="painelAlunos" style="display:none">
-    <div class="section-title">ALUNOS MATRICULADOS</div>
-    <div class="student-list" id="studentList"></div>
 
-    <!-- Visitantes -->
-    <div class="visitantes-card">
-      <div class="visitantes-header">
-        <span class="visitantes-title">👥 Visitantes</span>
-        <button class="btn-add-visitante" onclick="adicionarVisitante()">+ Adicionar</button>
-      </div>
-      <div id="visitantesContainer">
-        <p class="visitantes-empty" id="visitantesEmpty">Nenhum visitante. Clique em "+ Adicionar" para registrar.</p>
+    <!-- Abas (visíveis só no mobile) -->
+    <div class="mobile-tabs" id="mobileTabs">
+      <button class="mobile-tab active" id="tabAlunos" onclick="trocarAba('alunos')">
+        <span class="tab-icon">🎓</span>
+        <span>Alunos</span>
+        <span class="tab-badge" id="badgeAlunos"></span>
+      </button>
+      <button class="mobile-tab" id="tabVisitantes" onclick="trocarAba('visitantes')">
+        <span class="tab-icon">👥</span>
+        <span>Visitantes</span>
+        <span class="tab-badge" id="badgeVisitantes"></span>
+      </button>
+      <button class="mobile-tab" id="tabResumo" onclick="trocarAba('resumo')">
+        <span class="tab-icon">📊</span>
+        <span>Resumo</span>
+      </button>
+    </div>
+
+    <!-- Seção: Alunos -->
+    <div class="painel-section tab-active" id="secAlunos">
+      <div class="section-title">ALUNOS MATRICULADOS</div>
+      <div class="student-list" id="studentList"></div>
+    </div>
+
+    <!-- Seção: Visitantes -->
+    <div class="painel-section" id="secVisitantes">
+      <div class="visitantes-card">
+        <div class="visitantes-header">
+          <span class="visitantes-title">👥 Visitantes</span>
+          <button class="btn-add-visitante" onclick="adicionarVisitante()">+ Adicionar</button>
+        </div>
+        <div id="visitantesContainer">
+          <p class="visitantes-empty" id="visitantesEmpty">Nenhum visitante. Clique em "+ Adicionar" para registrar.</p>
+        </div>
       </div>
     </div>
 
-    <!-- Fechamento -->
-    <div class="fechamento-card">
-      <div class="fechamento-title">📊 Resumo do Domingo</div>
-      <div class="fechamento-stats-grid">
-        <div class="fstat blue">
-          <div class="fval" id="fMatriculados">0</div>
-          <div class="flbl">Matriculados</div>
+    <!-- Seção: Resumo -->
+    <div class="painel-section" id="secResumo">
+      <div class="fechamento-card">
+        <div class="fechamento-title">📊 Resumo do Domingo</div>
+        <div class="fechamento-stats-grid">
+          <div class="fstat blue">
+            <div class="fval" id="fMatriculados">0</div>
+            <div class="flbl">Matriculados</div>
+          </div>
+          <div class="fstat green">
+            <div class="fval" id="fPresentes">0</div>
+            <div class="flbl">Presentes</div>
+          </div>
+          <div class="fstat red">
+            <div class="fval" id="fAusentes">0</div>
+            <div class="flbl">Ausentes</div>
+          </div>
+          <div class="fstat">
+            <div class="fval" id="fVisitantes">0</div>
+            <div class="flbl">Visitantes</div>
+          </div>
+          <div class="fstat">
+            <div class="fval" id="fBiblias">0</div>
+            <div class="flbl">Bíblias</div>
+          </div>
+          <div class="fstat">
+            <div class="fval" id="fRevistas">0</div>
+            <div class="flbl">Revistas</div>
+          </div>
         </div>
-        <div class="fstat green">
-          <div class="fval" id="fPresentes">0</div>
-          <div class="flbl">Presentes</div>
-        </div>
-        <div class="fstat red">
-          <div class="fval" id="fAusentes">0</div>
-          <div class="flbl">Ausentes</div>
-        </div>
-        <div class="fstat">
-          <div class="fval" id="fVisitantes">0</div>
-          <div class="flbl">Visitantes</div>
-        </div>
-        <div class="fstat">
-          <div class="fval" id="fBiblias">0</div>
-          <div class="flbl">Bíblias</div>
-        </div>
-        <div class="fstat">
-          <div class="fval" id="fRevistas">0</div>
-          <div class="flbl">Revistas</div>
-        </div>
-      </div>
-      <div class="fechamento-inputs">
-        <div class="field">
-          <label>Ofertas (R$)</label>
-          <input type="number" id="fOfertas" value="0.00" min="0" step="0.01" placeholder="0,00">
-        </div>
-        <div class="field">
-          <label>Observações</label>
-          <input type="text" id="fObservacoes" placeholder="Ex: Culto missionário…">
+        <div class="fechamento-inputs">
+          <div class="field">
+            <label>Ofertas (R$)</label>
+            <input type="number" id="fOfertas" value="0.00" min="0" step="0.01" placeholder="0,00">
+          </div>
+          <div class="field">
+            <label>Observações</label>
+            <input type="text" id="fObservacoes" placeholder="Ex: Culto missionário…">
+          </div>
         </div>
       </div>
     </div>
+
   </div>
 
 </div>
@@ -1340,6 +1428,7 @@ function atualizarTotais() {
   document.getElementById('fRevistas').textContent     = revistas;
   document.getElementById('savePct').textContent       = total > 0 ? pct + '%' : '—';
   document.getElementById('saveDetail').textContent    = `${presentes} de ${total} presentes`;
+  atualizarBadges();
 }
 
 // ══════════════════════════════════════════════
@@ -1416,6 +1505,33 @@ async function salvarChamada() {
   } finally {
     btn.classList.remove('loading');
     btn.disabled = false;
+  }
+}
+
+// ── Abas mobile ──
+let abaAtiva = 'alunos';
+function trocarAba(aba) {
+  abaAtiva = aba;
+  ['alunos', 'visitantes', 'resumo'].forEach(a => {
+    document.getElementById(`tab${a.charAt(0).toUpperCase()+a.slice(1)}`)?.classList.toggle('active', a === aba);
+    document.getElementById(`sec${a.charAt(0).toUpperCase()+a.slice(1)}`)?.classList.toggle('tab-active', a === aba);
+  });
+}
+
+function atualizarBadges() {
+  const presInputs = document.querySelectorAll('[id^="pres_"]');
+  const marcados = [...presInputs].filter(el => el.value !== '').length;
+  const total    = presInputs.length;
+  const badge    = document.getElementById('badgeAlunos');
+  if (badge) {
+    badge.textContent = `${marcados}/${total}`;
+    badge.classList.toggle('visible', total > 0);
+  }
+  const visitantes = document.querySelectorAll('.visitante-row').length;
+  const bv = document.getElementById('badgeVisitantes');
+  if (bv) {
+    bv.textContent = visitantes;
+    bv.classList.toggle('visible', visitantes > 0);
   }
 }
 
