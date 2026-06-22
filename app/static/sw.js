@@ -40,7 +40,21 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Assets estáticos: cache-first
+  // HTML: network-first (garante atualizações imediatas), cache como fallback offline
+  if (e.request.destination === 'document' || url.pathname.endsWith('.html') || url.pathname === '/') {
+    e.respondWith(
+      fetch(e.request).then(resp => {
+        if (resp.ok) {
+          const clone = resp.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return resp;
+      }).catch(() => caches.match(e.request).then(c => c || caches.match('/login.html')))
+    );
+    return;
+  }
+
+  // Outros assets (JS, CSS, fontes, ícones): cache-first
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
