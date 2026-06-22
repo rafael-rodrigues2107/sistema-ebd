@@ -634,6 +634,46 @@
   .btn-save.loading .btn-save-text { display: none; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* ── Offline banner ── */
+  .offline-banner {
+    position: fixed;
+    top: var(--nav-h);
+    left: 0; right: 0;
+    z-index: 99;
+    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: .82rem;
+    font-weight: 600;
+    transition: transform .3s ease, opacity .3s ease;
+  }
+  .offline-banner.hidden { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+  .offline-banner.offline {
+    background: #fef3c7;
+    border-bottom: 1px solid #fcd34d;
+    color: #92400e;
+  }
+  .offline-banner.syncing {
+    background: #e0f2fe;
+    border-bottom: 1px solid #7dd3fc;
+    color: #0369a1;
+  }
+  .offline-banner.synced {
+    background: var(--success-light);
+    border-bottom: 1px solid #6ee7b7;
+    color: #065f46;
+  }
+  .offline-banner .spin-sm {
+    width: 13px; height: 13px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    flex-shrink: 0;
+  }
+  body.has-banner { padding-top: calc(var(--nav-h) + 36px); }
+
   /* ── Print ── */
   @media print {
     @page { size: A4 portrait; margin: 12mm; }
@@ -688,6 +728,12 @@
     <button class="btn-logout" onclick="fazerLogout()">Sair</button>
   </div>
 </nav>
+
+<!-- Banner offline -->
+<div class="offline-banner hidden" id="offlineBanner">
+  <span id="offlineIcon">📶</span>
+  <span id="offlineText">Sem conexão — chamada salva localmente</span>
+</div>
 
 <div class="container">
 
@@ -831,26 +877,28 @@ const role    = localStorage.getItem('ebd_role') || '';
 const nome    = localStorage.getItem('ebd_nome') || '';
 const turmaLS = localStorage.getItem('ebd_turma_id') || '';
 
+// ── Chaves de cache offline ──
+const CACHE_SELECTS = 'ebd_cache_selects';   // trimestres, domingos, turmas
+const CACHE_PAINEL  = 'ebd_cache_painel_';   // + turmaId_trimestreId_domingoId
+const DRAFT_KEY     = 'ebd_draft_';          // + turmaId_trimestreId_domingoId
+const SYNC_QUEUE    = 'ebd_sync_queue';       // fila de chamadas pendentes
+
 // ── Guarda de acesso ──
 (function () {
-  if (!role) {
-    localStorage.clear();
-    window.location.replace('/login.html');
-  }
+  if (!role) { localStorage.clear(); window.location.replace('/login.html'); }
 })();
 
 // ── Inicialização ──
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('navNome').textContent = nome ? `Olá, ${nome.split(' ')[0]}` : '';
-
   if (role === 'admin') {
     document.getElementById('navFechamento').style.display = '';
-    document.getElementById('navDashboard').style.display = '';
-    document.getElementById('navCadastros').style.display = '';
+    document.getElementById('navDashboard').style.display  = '';
+    document.getElementById('navCadastros').style.display  = '';
   }
-
   carregarTrimestres();
   carregarTurmas();
+  iniciarMonitorOffline();
 });
 
 function fazerLogout() {
@@ -860,53 +908,221 @@ function fazerLogout() {
   });
 }
 
-// ── Seletor toggle ──
+// ══════════════════════════════════════════════
+// OFFLINE — monitor de conexão
+// ══════════════════════════════════════════════
+function iniciarMonitorOffline() {
+  window.addEventListener('online',  () => { atualizarBannerConexao(); tentarSincronizar(); });
+  window.addEventListener('offline', () => atualizarBannerConexao());
+  atualizarBannerConexao();
+}
+
+function atualizarBannerConexao(estado) {
+  const banner = document.getElementById('offlineBanner');
+  const icon   = document.getElementById('offlineIcon');
+  const text   = document.getElementById('offlineText');
+
+  if (estado === 'syncing') {
+    banner.className = 'offline-banner syncing';
+    icon.textContent = '';
+    icon.innerHTML   = '<span class="spin-sm"></span>';
+    text.textContent = 'Sincronizando chamada com o servidor…';
+    document.body.classList.add('has-banner');
+    return;
+  }
+  if (estado === 'synced') {
+    banner.className = 'offline-banner synced';
+    icon.textContent = '✅';
+    text.textContent = 'Chamada sincronizada com sucesso!';
+    document.body.classList.add('has-banner');
+    setTimeout(() => { banner.className = 'offline-banner hidden'; document.body.classList.remove('has-banner'); }, 3000);
+    return;
+  }
+
+  const temFila = getFilaSinc().length > 0;
+  if (!navigator.onLine) {
+    banner.className = 'offline-banner offline';
+    icon.textContent = '📶';
+    text.textContent = 'Sem conexão — chamadas salvas localmente';
+    document.body.classList.add('has-banner');
+  } else if (temFila) {
+    banner.className = 'offline-banner syncing';
+    icon.innerHTML   = '<span class="spin-sm"></span>';
+    text.textContent = 'Aguardando sincronização…';
+    document.body.classList.add('has-banner');
+  } else {
+    banner.className = 'offline-banner hidden';
+    document.body.classList.remove('has-banner');
+  }
+}
+
+// ── Fila de sincronização ──
+function getFilaSinc() {
+  try { return JSON.parse(localStorage.getItem(SYNC_QUEUE) || '[]'); } catch { return []; }
+}
+function setFilaSinc(fila) {
+  localStorage.setItem(SYNC_QUEUE, JSON.stringify(fila));
+}
+function adicionarFilaSinc(payload) {
+  const fila = getFilaSinc();
+  // Substitui se já existe entrada para mesma chamada
+  const idx = fila.findIndex(f => f.turmaId === payload.turmaId && f.domingoId === payload.domingoId);
+  if (idx >= 0) fila[idx] = payload; else fila.push(payload);
+  setFilaSinc(fila);
+}
+
+async function tentarSincronizar() {
+  const fila = getFilaSinc();
+  if (!fila.length || !navigator.onLine) return;
+
+  atualizarBannerConexao('syncing');
+  const novaFila = [];
+
+  for (const item of fila) {
+    try {
+      const resp = await fetch(`/api/turmas/${item.turmaId}/chamada`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(item.body),
+      });
+      if (!resp.ok) novaFila.push(item); // mantém na fila se falhar
+    } catch {
+      novaFila.push(item);
+    }
+  }
+
+  setFilaSinc(novaFila);
+  if (novaFila.length === 0) {
+    atualizarBannerConexao('synced');
+    // Limpa rascunho da chamada atual se sincronizou
+    if (turmaId && trimestreId && domingoId) {
+      localStorage.removeItem(DRAFT_KEY + `${turmaId}_${trimestreId}_${domingoId}`);
+    }
+  } else {
+    atualizarBannerConexao();
+  }
+}
+
+// ── Cache de selects ──
+function salvarCacheSelects(chave, dados) {
+  try {
+    const cache = JSON.parse(localStorage.getItem(CACHE_SELECTS) || '{}');
+    cache[chave] = { dados, ts: Date.now() };
+    localStorage.setItem(CACHE_SELECTS, JSON.stringify(cache));
+  } catch {}
+}
+function lerCacheSelects(chave, maxIdadeMs = 24 * 60 * 60 * 1000) {
+  try {
+    const cache = JSON.parse(localStorage.getItem(CACHE_SELECTS) || '{}');
+    const entry = cache[chave];
+    if (entry && (Date.now() - entry.ts) < maxIdadeMs) return entry.dados;
+  } catch {}
+  return null;
+}
+
+// ── Cache do painel ──
+function salvarCachePainel(tId, triId, dId, data) {
+  try { localStorage.setItem(CACHE_PAINEL + `${tId}_${triId}_${dId}`, JSON.stringify({ data, ts: Date.now() })); } catch {}
+}
+function lerCachePainel(tId, triId, dId) {
+  try {
+    const raw = localStorage.getItem(CACHE_PAINEL + `${tId}_${triId}_${dId}`);
+    if (raw) return JSON.parse(raw).data;
+  } catch {}
+  return null;
+}
+
+// ── Rascunho automático ──
+function salvarRascunho() {
+  if (!turmaId || !trimestreId || !domingoId) return;
+  const draft = coletarDadosChamada();
+  try { localStorage.setItem(DRAFT_KEY + `${turmaId}_${trimestreId}_${domingoId}`, JSON.stringify(draft)); } catch {}
+}
+function lerRascunho(tId, triId, dId) {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY + `${tId}_${triId}_${dId}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+function aplicarRascunho(draft) {
+  if (!draft) return;
+  draft.chamadas.forEach(c => {
+    const hidInput = document.getElementById(`pres_${c.aluno_id}`);
+    if (!hidInput) return;
+    if (c.presente !== null) togglePresenca(c.aluno_id, c.presente);
+    if (c.trouxe_biblia)  document.getElementById(`bib_${c.aluno_id}`)?.classList.add('on');
+    if (c.trouxe_revista) document.getElementById(`rev_${c.aluno_id}`)?.classList.add('on');
+  });
+  // visitantes do rascunho
+  const vc = document.getElementById('visitantesContainer');
+  vc.innerHTML = '';
+  if (draft.visitantes.length === 0) {
+    vc.innerHTML = '<p class="visitantes-empty" id="visitantesEmpty">Nenhum visitante. Clique em "+ Adicionar" para registrar.</p>';
+  } else {
+    draft.visitantes.forEach(v => adicionarVisitante(v.nome));
+  }
+  if (draft.fechamento) {
+    document.getElementById('fOfertas').value     = draft.fechamento.valor_ofertas ?? '0.00';
+    document.getElementById('fObservacoes').value = draft.fechamento.observacoes   ?? '';
+  }
+  atualizarTotais();
+}
+
+// ══════════════════════════════════════════════
+// Seletor toggle
+// ══════════════════════════════════════════════
 function toggleSelector() {
   const body  = document.getElementById('selectorBody');
   const arrow = document.getElementById('selectorArrow');
   const open  = body.classList.toggle('open');
   arrow.classList.toggle('open', open);
 }
-
 function fecharSeletor(subtitulo) {
   document.getElementById('selectorBody').classList.remove('open');
   document.getElementById('selectorArrow').classList.remove('open');
   if (subtitulo) document.getElementById('selectorSubtitle').textContent = subtitulo;
 }
 
-// ── Carregamento de selects ──
+// ══════════════════════════════════════════════
+// Carregamento de selects (com fallback offline)
+// ══════════════════════════════════════════════
 async function carregarTrimestres() {
   const sel = document.getElementById('trimestreSelect');
+  let lista = null;
   try {
     const resp = await fetch('/api/trimestres/', { credentials: 'include' });
-    const lista = await resp.json();
-    sel.innerHTML = '<option value="">Selecione…</option>';
-    lista.forEach(t => {
-      sel.innerHTML += `<option value="${t.id}">${t.ano} — ${t.numero}º Trimestre</option>`;
-    });
-    const ativoR = await fetch('/api/trimestres/ativo', { credentials: 'include' }).catch(() => null);
-    if (ativoR && ativoR.ok) {
-      const ativo = await ativoR.json();
-      sel.value = ativo.id;
-      carregarDomingos(ativo.id);
-    }
-  } catch { sel.innerHTML = '<option value="">Erro ao carregar</option>'; }
+    lista = await resp.json();
+    salvarCacheSelects('trimestres', lista);
+  } catch {
+    lista = lerCacheSelects('trimestres');
+  }
+  if (!lista) { sel.innerHTML = '<option value="">Sem conexão</option>'; return; }
+  sel.innerHTML = '<option value="">Selecione…</option>';
+  lista.forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.ano} — ${t.numero}º Trimestre</option>`; });
+
+  let ativo = lerCacheSelects('trimestreAtivo');
+  try {
+    const r = await fetch('/api/trimestres/ativo', { credentials: 'include' });
+    if (r.ok) { ativo = await r.json(); salvarCacheSelects('trimestreAtivo', ativo); }
+  } catch {}
+  if (ativo) { sel.value = ativo.id; carregarDomingos(ativo.id); }
 }
 
 async function carregarTurmas() {
   const sel = document.getElementById('turmaSelect');
+  let lista = null;
   try {
     const resp = await fetch('/api/turmas/', { credentials: 'include' });
-    const lista = await resp.json();
-    sel.innerHTML = '<option value="">Selecione…</option>';
-    lista.forEach(t => {
-      sel.innerHTML += `<option value="${t.id}">${t.nome}</option>`;
-    });
-    if (role === 'professor' && turmaLS) {
-      sel.value = turmaLS;
-      sel.disabled = true;
-    }
-  } catch { sel.innerHTML = '<option value="">Erro ao carregar</option>'; }
+    lista = await resp.json();
+    salvarCacheSelects('turmas', lista);
+  } catch {
+    lista = lerCacheSelects('turmas');
+  }
+  if (!lista) { sel.innerHTML = '<option value="">Sem conexão</option>'; return; }
+  sel.innerHTML = '<option value="">Selecione…</option>';
+  lista.forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.nome}</option>`; });
+  if (role === 'professor' && turmaLS) { sel.value = turmaLS; sel.disabled = true; }
 }
 
 document.getElementById('trimestreSelect').addEventListener('change', function () {
@@ -917,26 +1133,32 @@ document.getElementById('trimestreSelect').addEventListener('change', function (
 async function carregarDomingos(tId) {
   const sel = document.getElementById('domingoSelect');
   sel.innerHTML = '<option value="">Carregando…</option>';
+  let lista = null;
   try {
     const resp = await fetch(`/api/trimestres/${tId}/domingos`, { credentials: 'include' });
-    const lista = await resp.json();
-    sel.innerHTML = '<option value="">Selecione…</option>';
-    lista.forEach(d => {
-      const dt = new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR');
-      sel.innerHTML += `<option value="${d.id}">${d.numero}º Domingo — ${dt}</option>`;
-    });
-    // Seleciona automaticamente o domingo mais próximo da data atual
-    if (lista.length) {
-      const hoje = new Date().toISOString().slice(0, 10);
-      const prox = lista.reduce((prev, cur) => {
-        return Math.abs(new Date(cur.data) - new Date(hoje)) < Math.abs(new Date(prev.data) - new Date(hoje)) ? cur : prev;
-      });
-      sel.value = prox.id;
-    }
-  } catch { sel.innerHTML = '<option value="">Erro ao carregar</option>'; }
+    lista = await resp.json();
+    salvarCacheSelects(`domingos_${tId}`, lista);
+  } catch {
+    lista = lerCacheSelects(`domingos_${tId}`);
+  }
+  if (!lista) { sel.innerHTML = '<option value="">Sem conexão</option>'; return; }
+  sel.innerHTML = '<option value="">Selecione…</option>';
+  lista.forEach(d => {
+    const dt = new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR');
+    sel.innerHTML += `<option value="${d.id}">${d.numero}º Domingo — ${dt}</option>`;
+  });
+  if (lista.length) {
+    const hoje = new Date().toISOString().slice(0, 10);
+    const prox = lista.reduce((prev, cur) =>
+      Math.abs(new Date(cur.data) - new Date(hoje)) < Math.abs(new Date(prev.data) - new Date(hoje)) ? cur : prev
+    );
+    sel.value = prox.id;
+  }
 }
 
-// ── Carregar painel de chamada ──
+// ══════════════════════════════════════════════
+// Carregar painel (com fallback offline)
+// ══════════════════════════════════════════════
 async function carregarPainel() {
   turmaId     = parseInt(document.getElementById('turmaSelect').value);
   trimestreId = parseInt(document.getElementById('trimestreSelect').value);
@@ -946,36 +1168,52 @@ async function carregarPainel() {
     mostrarMsg('Selecione Trimestre, Domingo e Turma.', 'info');
     return;
   }
-
   esconderMsg();
+
+  let data = null;
+  let usouCache = false;
   try {
     const resp = await fetch(
       `/api/turmas/${turmaId}/painel?trimestre_id=${trimestreId}&domingo_id=${domingoId}`,
       { credentials: 'include' }
     );
     if (!resp.ok) throw new Error((await resp.json()).detail || 'Erro');
-    const data = await resp.json();
-    renderizarPainel(data);
+    data = await resp.json();
+    salvarCachePainel(turmaId, trimestreId, domingoId, data);
   } catch (e) {
-    mostrarMsg('Erro ao carregar: ' + e.message, 'danger');
+    data = lerCachePainel(turmaId, trimestreId, domingoId);
+    if (data) {
+      usouCache = true;
+    } else {
+      mostrarMsg('Sem conexão e sem dados em cache para esta chamada.', 'danger');
+      return;
+    }
   }
+
+  renderizarPainel(data);
+
+  // Aplica rascunho salvo localmente (sobrescreve dados do servidor/cache)
+  const draft = lerRascunho(turmaId, trimestreId, domingoId);
+  if (draft) aplicarRascunho(draft);
+
+  if (usouCache) mostrarMsg('Modo offline — usando dados em cache. Alterações serão sincronizadas ao reconectar.', 'info');
+
+  // Tenta sincronizar fila pendente
+  tentarSincronizar();
 }
 
 function renderizarPainel(data) {
-  // Header
   document.getElementById('chamadaHeader').style.display = 'block';
   document.getElementById('chamadaTurma').textContent = `${data.turma.nome} — ${data.turma.faixa_etaria}`;
   const domingoData = new Date(data.domingo.data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
   document.getElementById('chamadaMeta').textContent =
     `${domingoData} · ${data.domingo.numero}º Domingo · Tema: ${data.domingo.tema_licao || 'não informado'}`;
 
-  // Fecha seletor
   const turmaNome = data.turma.nome;
   const domData   = new Date(data.domingo.data + 'T00:00:00').toLocaleDateString('pt-BR');
   fecharSeletor(`${turmaNome} · ${domData}`);
   document.getElementById('btnImprimir').style.display = '';
 
-  // Alunos
   const list = document.getElementById('studentList');
   list.innerHTML = '';
   data.alunos.forEach(a => {
@@ -988,20 +1226,19 @@ function renderizarPainel(data) {
       <div class="student-info">
         <div class="student-name">${esc(a.nome)}</div>
         <div class="student-materials">
-          <button class="mat-btn ${a.trouxe_biblia ? 'on' : ''}" id="bib_${a.aluno_id}" onclick="toggleMat(this,'bib',${a.aluno_id})">📖 Bíblia</button>
-          <button class="mat-btn ${a.trouxe_revista ? 'on' : ''}" id="rev_${a.aluno_id}" onclick="toggleMat(this,'rev',${a.aluno_id})">📰 Revista</button>
+          <button class="mat-btn ${a.trouxe_biblia ? 'on' : ''}" id="bib_${a.aluno_id}" onclick="toggleMat(this)">📖 Bíblia</button>
+          <button class="mat-btn ${a.trouxe_revista ? 'on' : ''}" id="rev_${a.aluno_id}" onclick="toggleMat(this)">📰 Revista</button>
         </div>
       </div>
       <div class="student-actions">
-        <button class="pres-btn ${a.presente === true ? 'p-active' : ''}" id="pBtn_${a.aluno_id}" data-aluno="${a.aluno_id}" data-val="1" onclick="togglePresenca(${a.aluno_id}, true)">P</button>
-        <button class="pres-btn ${a.presente === false ? 'f-active' : ''}" id="fBtn_${a.aluno_id}" data-aluno="${a.aluno_id}" data-val="0" onclick="togglePresenca(${a.aluno_id}, false)">F</button>
+        <button class="pres-btn ${a.presente === true ? 'p-active' : ''}" id="pBtn_${a.aluno_id}" onclick="togglePresenca(${a.aluno_id}, true)">P</button>
+        <button class="pres-btn ${a.presente === false ? 'f-active' : ''}" id="fBtn_${a.aluno_id}" onclick="togglePresenca(${a.aluno_id}, false)">F</button>
       </div>
       <input type="hidden" id="pres_${a.aluno_id}" value="${a.presente === true ? '1' : a.presente === false ? '0' : ''}">
     `;
     list.appendChild(card);
   });
 
-  // Visitantes
   const vc = document.getElementById('visitantesContainer');
   vc.innerHTML = '';
   if (data.visitantes.length === 0) {
@@ -1010,63 +1247,61 @@ function renderizarPainel(data) {
     data.visitantes.forEach(v => adicionarVisitante(v.nome));
   }
 
-  // Fechamento
   if (data.fechamento) {
-    document.getElementById('fOfertas').value = data.fechamento.valor_ofertas;
+    document.getElementById('fOfertas').value     = data.fechamento.valor_ofertas;
     document.getElementById('fObservacoes').value = data.fechamento.observacoes || '';
   } else {
-    document.getElementById('fOfertas').value = '0.00';
+    document.getElementById('fOfertas').value     = '0.00';
     document.getElementById('fObservacoes').value = '';
   }
 
   document.getElementById('painelAlunos').style.display = 'block';
   document.getElementById('saveBar').classList.add('visible');
   atualizarTotais();
-
-  // Scroll para o painel
   document.getElementById('chamadaHeader').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// ── Toggles ──
+// ══════════════════════════════════════════════
+// Toggles — salvam rascunho automaticamente
+// ══════════════════════════════════════════════
 function togglePresenca(alunoId, presente) {
-  const pBtn = document.getElementById(`pBtn_${alunoId}`);
-  const fBtn = document.getElementById(`fBtn_${alunoId}`);
+  const pBtn    = document.getElementById(`pBtn_${alunoId}`);
+  const fBtn    = document.getElementById(`fBtn_${alunoId}`);
   const hidInput = document.getElementById(`pres_${alunoId}`);
-  const card = document.getElementById(`sc_${alunoId}`);
-  const av   = document.getElementById(`av_${alunoId}`);
+  const card    = document.getElementById(`sc_${alunoId}`);
 
   pBtn.classList.toggle('p-active', presente);
   fBtn.classList.toggle('f-active', !presente);
   hidInput.value = presente ? '1' : '0';
-
   card.classList.remove('presente', 'ausente');
-  av.classList = 'student-avatar';
-  if (presente) { card.classList.add('presente'); }
-  else          { card.classList.add('ausente'); }
+  card.classList.add(presente ? 'presente' : 'ausente');
 
   atualizarTotais();
+  salvarRascunho();
 }
 
 function toggleMat(btn) {
   btn.classList.toggle('on');
   atualizarTotais();
+  salvarRascunho();
 }
 
 // ── Visitantes ──
-function adicionarVisitante(nome = '') {
+function adicionarVisitante(nomeVal = '') {
   const empty = document.getElementById('visitantesEmpty');
   if (empty) empty.remove();
-
   const vc  = document.getElementById('visitantesContainer');
   const div = document.createElement('div');
   div.className = 'visitante-row';
   div.innerHTML = `
-    <input type="text" class="visitante-nome" value="${esc(nome)}" placeholder="Nome do visitante">
+    <input type="text" class="visitante-nome" value="${esc(nomeVal)}" placeholder="Nome do visitante">
     <button class="btn-rm" onclick="removerVisitante(this)">✕</button>
   `;
   vc.appendChild(div);
-  div.querySelector('input').focus();
+  div.querySelector('input').addEventListener('input', () => { atualizarTotais(); salvarRascunho(); });
+  if (!nomeVal) div.querySelector('input').focus();
   atualizarTotais();
+  salvarRascunho();
 }
 
 function removerVisitante(btn) {
@@ -1076,100 +1311,108 @@ function removerVisitante(btn) {
     vc.innerHTML = '<p class="visitantes-empty" id="visitantesEmpty">Nenhum visitante. Clique em "+ Adicionar" para registrar.</p>';
   }
   atualizarTotais();
+  salvarRascunho();
 }
 
 // ── Totais ──
 function atualizarTotais() {
   const presInputs = document.querySelectorAll('[id^="pres_"]');
-  let presentes = 0, ausentes = 0, sem_registro = 0;
-  let biblias = 0, revistas = 0;
+  let presentes = 0, ausentes = 0, sem_registro = 0, biblias = 0, revistas = 0;
   const total = presInputs.length;
-
   presInputs.forEach(el => {
     if (el.value === '1') presentes++;
     else if (el.value === '0') ausentes++;
     else sem_registro++;
   });
-
   document.querySelectorAll('[id^="bib_"]').forEach(btn => { if (btn.classList.contains('on')) biblias++; });
   document.querySelectorAll('[id^="rev_"]').forEach(btn => { if (btn.classList.contains('on')) revistas++; });
-
   const visitantes = document.querySelectorAll('.visitante-row').length;
+  const pct = total > 0 ? Math.round(presentes / total * 100) : 0;
 
-  // Header stats
   document.getElementById('hdrPresentes').textContent = presentes;
   document.getElementById('hdrTotal').textContent     = total;
-  const pct = total > 0 ? Math.round(presentes / total * 100) : 0;
   document.getElementById('hdrPct').textContent       = total > 0 ? pct + '%' : '—';
-
-  // Fechamento read-only
   document.getElementById('fMatriculados').textContent = total;
   document.getElementById('fPresentes').textContent    = presentes;
   document.getElementById('fAusentes').textContent     = ausentes + sem_registro;
   document.getElementById('fVisitantes').textContent   = visitantes;
   document.getElementById('fBiblias').textContent      = biblias;
   document.getElementById('fRevistas').textContent     = revistas;
-
-  // Save bar
-  document.getElementById('savePct').textContent  = total > 0 ? pct + '%' : '—';
-  document.getElementById('saveDetail').textContent = `${presentes} de ${total} presentes`;
+  document.getElementById('savePct').textContent       = total > 0 ? pct + '%' : '—';
+  document.getElementById('saveDetail').textContent    = `${presentes} de ${total} presentes`;
 }
 
-// ── Salvar ──
+// ══════════════════════════════════════════════
+// Coleta dados da chamada (usado por salvar e rascunho)
+// ══════════════════════════════════════════════
+function coletarDadosChamada() {
+  const chamadas = [];
+  document.querySelectorAll('[id^="pres_"]').forEach(el => {
+    const alunoId = parseInt(el.id.replace('pres_', ''));
+    chamadas.push({
+      aluno_id: alunoId,
+      presente: el.value === '1' ? true : el.value === '0' ? false : null,
+      trouxe_biblia:   document.getElementById(`bib_${alunoId}`)?.classList.contains('on') || false,
+      trouxe_revista:  document.getElementById(`rev_${alunoId}`)?.classList.contains('on') || false,
+    });
+  });
+  const visitantes = [];
+  document.querySelectorAll('.visitante-nome').forEach(el => {
+    const n = el.value.trim();
+    if (n) visitantes.push({ nome: n, presente: true });
+  });
+  const fechamento = {
+    total_matriculados: parseInt(document.getElementById('fMatriculados').textContent) || 0,
+    total_presentes:    parseInt(document.getElementById('fPresentes').textContent)    || 0,
+    total_visitantes:   parseInt(document.getElementById('fVisitantes').textContent)   || 0,
+    total_ausentes:     parseInt(document.getElementById('fAusentes').textContent)     || 0,
+    total_biblias:      parseInt(document.getElementById('fBiblias').textContent)      || 0,
+    total_revistas:     parseInt(document.getElementById('fRevistas').textContent)     || 0,
+    valor_ofertas:      parseFloat(document.getElementById('fOfertas').value)          || 0,
+    observacoes:        document.getElementById('fObservacoes').value.trim()           || null,
+  };
+  return { chamadas, visitantes, fechamento };
+}
+
+// ══════════════════════════════════════════════
+// Salvar — online envia direto, offline enfileira
+// ══════════════════════════════════════════════
 async function salvarChamada() {
-  if (!turmaId || !trimestreId || !domingoId) {
-    mostrarMsg('Abra uma chamada primeiro.', 'info');
-    return;
-  }
+  if (!turmaId || !trimestreId || !domingoId) { mostrarMsg('Abra uma chamada primeiro.', 'info'); return; }
 
   const btn = document.getElementById('btnSalvar');
   btn.classList.add('loading');
   btn.disabled = true;
   esconderMsg();
 
-  // Coleta alunos
-  const chamadas = [];
-  document.querySelectorAll('[id^="pres_"]').forEach(el => {
-    const alunoId = parseInt(el.id.replace('pres_', ''));
-    const val = el.value;
-    chamadas.push({
-      aluno_id: alunoId,
-      presente: val === '1',
-      trouxe_biblia: document.getElementById(`bib_${alunoId}`)?.classList.contains('on') || false,
-      trouxe_revista: document.getElementById(`rev_${alunoId}`)?.classList.contains('on') || false,
-    });
-  });
+  const body = { trimestre_id: trimestreId, domingo_id: domingoId, ...coletarDadosChamada() };
 
-  // Coleta visitantes
-  const visitantes = [];
-  document.querySelectorAll('.visitante-nome').forEach(el => {
-    const nome = el.value.trim();
-    if (nome) visitantes.push({ nome, presente: true });
-  });
-
-  // Coleta fechamento (campos read-only calculados + campos editáveis)
-  const fechamento = {
-    total_matriculados: parseInt(document.getElementById('fMatriculados').textContent) || 0,
-    total_presentes:    parseInt(document.getElementById('fPresentes').textContent) || 0,
-    total_visitantes:   parseInt(document.getElementById('fVisitantes').textContent) || 0,
-    total_ausentes:     parseInt(document.getElementById('fAusentes').textContent) || 0,
-    total_biblias:      parseInt(document.getElementById('fBiblias').textContent) || 0,
-    total_revistas:     parseInt(document.getElementById('fRevistas').textContent) || 0,
-    valor_ofertas:      parseFloat(document.getElementById('fOfertas').value) || 0,
-    observacoes:        document.getElementById('fObservacoes').value.trim() || null,
-  };
+  if (!navigator.onLine) {
+    adicionarFilaSinc({ turmaId, domingoId, body });
+    salvarRascunho();
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    atualizarBannerConexao();
+    mostrarMsg('Sem conexão — chamada salva localmente. Será enviada ao reconectar.', 'info');
+    return;
+  }
 
   try {
     const resp = await fetch(`/api/turmas/${turmaId}/chamada`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ trimestre_id: trimestreId, domingo_id: domingoId, chamadas, visitantes, fechamento }),
+      body: JSON.stringify(body),
     });
     if (!resp.ok) throw new Error((await resp.json()).detail || 'Erro ao salvar');
+    // Salvo com sucesso — limpa rascunho local
+    localStorage.removeItem(DRAFT_KEY + `${turmaId}_${trimestreId}_${domingoId}`);
     mostrarMsg('Chamada salva com sucesso!', 'success');
   } catch (e) {
-    mostrarMsg('Erro: ' + e.message, 'danger');
+    // Falhou mesmo online — enfileira para retry
+    adicionarFilaSinc({ turmaId, domingoId, body });
+    salvarRascunho();
+    mostrarMsg('Erro ao salvar. Chamada guardada localmente e será reenviada.', 'info');
   } finally {
     btn.classList.remove('loading');
     btn.disabled = false;
@@ -1187,10 +1430,17 @@ function mostrarMsg(txt, tipo) {
   el.textContent = txt;
   el.className = 'alert alert-' + tipo;
   el.style.display = 'block';
-  if (tipo !== 'danger') setTimeout(() => { el.style.display = 'none'; }, 5000);
+  if (tipo !== 'danger') setTimeout(() => { el.style.display = 'none'; }, 6000);
   el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 function esconderMsg() { document.getElementById('msg').style.display = 'none'; }
+
+// Salva rascunho ao alterar campos de fechamento
+document.addEventListener('DOMContentLoaded', () => {
+  ['fOfertas', 'fObservacoes'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', salvarRascunho);
+  });
+});
 </script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
 </body>
