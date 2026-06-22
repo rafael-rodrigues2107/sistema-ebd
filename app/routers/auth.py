@@ -1,14 +1,14 @@
 """
 Autenticação JWT e gerenciamento de usuários.
+Token armazenado em cookie httpOnly (ebd_session) — não exposto no localStorage.
 """
 
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 import bcrypt as _bcrypt
 
-from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,13 +27,11 @@ from schemas import (
 # ── Criptografia ──────────────────────────────────────────────────────────────
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_HOURS = 8
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
+COOKIE_NAME = "ebd_session"
 
 _401 = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Credenciais inválidas ou expiradas",
-    headers={"WWW-Authenticate": "Bearer"},
 )
 _403 = HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso restrito a administradores")
 
@@ -58,11 +56,22 @@ def criar_token(user_id: int, role: str) -> str:
     )
 
 
+def _extrair_token(request: Request) -> Optional[str]:
+    """Lê token do cookie httpOnly ou, como fallback, do header Authorization."""
+    token = request.cookies.get(COOKIE_NAME)
+    if not token:
+        auth = request.headers.get("Authorization", "")
+        if auth.startswith("Bearer "):
+            token = auth[7:]
+    return token or None
+
+
 # ── Dependências de autenticação ──────────────────────────────────────────────
 async def get_current_user(
-    token: Optional[str] = Depends(oauth2_scheme),
+    request: Request,
     session: AsyncSession = Depends(get_session),
 ) -> Usuario:
+    token = _extrair_token(request)
     if not token:
         raise _401
     try:
@@ -85,10 +94,11 @@ async def require_admin(user: Usuario = Depends(get_current_user)) -> Usuario:
 
 
 async def get_optional_user(
-    token: Optional[str] = Depends(oauth2_scheme),
+    request: Request,
     session: AsyncSession = Depends(get_session),
 ) -> Optional[Usuario]:
     """Retorna o usuário se o token for válido; None se ausente/inválido."""
+    token = _extrair_token(request)
     if not token:
         return None
     try:
@@ -114,6 +124,18 @@ def _to_read(u: Usuario) -> UsuarioRead:
     )
 
 
+def _set_auth_cookie(response: Response, token: str, is_secure: bool) -> None:
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=token,
+        httponly=True,
+        samesite="lax",
+        max_age=TOKEN_EXPIRE_HOURS * 3600,
+        secure=is_secure,
+        path="/",
+    )
+
+
 # ── Routers ───────────────────────────────────────────────────────────────────
 auth_router = APIRouter(prefix="/api/auth", tags=["Auth"])
 usuarios_router = APIRouter(prefix="/api/usuarios", tags=["Usuários"])
@@ -122,13 +144,18 @@ usuarios_router = APIRouter(prefix="/api/usuarios", tags=["Usuários"])
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
 @auth_router.post("/login", response_model=TokenResponse)
-async def login(body: LoginRequest, session: AsyncSession = Depends(get_session)):
+async def login(body: LoginRequest, request: Request, response: Response, session: AsyncSession = Depends(get_session)):
     result = await session.execute(select(Usuario).where(Usuario.username == body.username))
     user = result.scalar_one_or_none()
     if not user or not verificar_senha(body.senha, user.senha_hash) or not user.ativo:
         raise HTTPException(status_code=401, detail="Usuário ou senha incorretos")
+
+    token = criar_token(user.id, user.role)
+    is_secure = request.url.scheme == "https"
+    _set_auth_cookie(response, token, is_secure)
+
     return TokenResponse(
-        access_token=criar_token(user.id, user.role),
+        access_token=token,
         token_type="bearer",
         role=user.role,
         nome=user.nome,
@@ -136,9 +163,21 @@ async def login(body: LoginRequest, session: AsyncSession = Depends(get_session)
     )
 
 
+@auth_router.post("/logout")
+async def logout(response: Response):
+    response.delete_cookie(COOKIE_NAME, path="/")
+    return {"ok": True}
+
+
 @auth_router.get("/me")
 async def me(user: Usuario = Depends(get_current_user)):
-    return {"id": user.id, "nome": user.nome, "username": user.username, "role": user.role}
+    return {
+        "id": user.id,
+        "nome": user.nome,
+        "username": user.username,
+        "role": user.role,
+        "turma_id": user.turma_id,
+    }
 
 
 # ── Usuários (admin) ──────────────────────────────────────────────────────────

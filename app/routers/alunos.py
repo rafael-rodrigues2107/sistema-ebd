@@ -9,9 +9,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_session
-from models import Aluno, Matricula, Trimestre, Usuario
+from models import Aluno, Chamada, Domingo, Matricula, Trimestre, Turma, Usuario
 from routers.auth import get_optional_user, require_admin
-from schemas import AlunoCreate, AlunoRead, AlunoUpdate
+from schemas import AlunoCreate, AlunoHistoricoResponse, AlunoRead, AlunoUpdate, DomingoHistoricoItem, TrimestreRead
 
 router = APIRouter(prefix="/api/alunos", tags=["Alunos"])
 
@@ -54,11 +54,9 @@ async def atualizar_aluno(
     dados = body.model_dump(exclude_unset=True)
     novo_turma_id = dados.pop("turma_id", None)
 
-    # Atualiza campos diretos do aluno
     for field, value in dados.items():
         setattr(aluno, field, value)
 
-    # Se turma_id fornecido, migra a matrícula ativa no trimestre corrente
     if novo_turma_id is not None:
         trim_res = await session.execute(
             select(Trimestre)
@@ -83,7 +81,6 @@ async def atualizar_aluno(
             if matricula:
                 matricula.turma_id = novo_turma_id
             else:
-                # Aluno sem matrícula neste trimestre: cria uma nova
                 session.add(Matricula(
                     aluno_id=aluno_id,
                     turma_id=novo_turma_id,
@@ -107,3 +104,97 @@ async def remover_aluno(
         raise HTTPException(status_code=404, detail="Aluno não encontrado")
     aluno.ativo = False
     await session.commit()
+
+
+@router.get("/{aluno_id}/historico", response_model=AlunoHistoricoResponse)
+async def historico_aluno(
+    aluno_id: int,
+    trimestre_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    """Retorna o histórico de presença de um aluno em um trimestre."""
+    aluno = await session.get(Aluno, aluno_id)
+    if not aluno:
+        raise HTTPException(status_code=404, detail="Aluno não encontrado")
+
+    trimestre = await session.get(Trimestre, trimestre_id)
+    if not trimestre:
+        raise HTTPException(status_code=404, detail="Trimestre não encontrado")
+
+    # Todos os domingos do trimestre
+    domingos = (
+        await session.execute(
+            select(Domingo)
+            .where(Domingo.trimestre_id == trimestre_id)
+            .order_by(Domingo.numero)
+        )
+    ).scalars().all()
+
+    # Chamadas do aluno neste trimestre
+    chamadas_rows = (
+        await session.execute(
+            select(Chamada, Turma.nome.label("turma_nome"))
+            .join(Domingo, Chamada.domingo_id == Domingo.id)
+            .join(Turma, Chamada.turma_id == Turma.id)
+            .where(
+                Chamada.aluno_id == aluno_id,
+                Domingo.trimestre_id == trimestre_id,
+            )
+        )
+    ).all()
+    chamadas_map = {row.Chamada.domingo_id: row for row in chamadas_rows}
+
+    # Turma padrão da matrícula ativa neste trimestre
+    matricula_row = (
+        await session.execute(
+            select(Matricula, Turma.nome.label("turma_nome"))
+            .join(Turma, Matricula.turma_id == Turma.id)
+            .where(
+                Matricula.aluno_id == aluno_id,
+                Matricula.trimestre_id == trimestre_id,
+                Matricula.ativo == True,
+            )
+            .limit(1)
+        )
+    ).first()
+    turma_nome_default = matricula_row.turma_nome if matricula_row else None
+
+    items: list[DomingoHistoricoItem] = []
+    for d in domingos:
+        row = chamadas_map.get(d.id)
+        if row:
+            c = row.Chamada
+            items.append(DomingoHistoricoItem(
+                domingo_id=d.id,
+                data=d.data,
+                numero=d.numero,
+                tema_licao=d.tema_licao,
+                turma_nome=row.turma_nome,
+                presente=c.presente,
+                trouxe_biblia=c.trouxe_biblia,
+                trouxe_revista=c.trouxe_revista,
+            ))
+        else:
+            items.append(DomingoHistoricoItem(
+                domingo_id=d.id,
+                data=d.data,
+                numero=d.numero,
+                tema_licao=d.tema_licao,
+                turma_nome=turma_nome_default,
+                presente=None,
+                trouxe_biblia=None,
+                trouxe_revista=None,
+            ))
+
+    total_registrados = sum(1 for i in items if i.presente is not None)
+    total_presentes = sum(1 for i in items if i.presente is True)
+    pct = round(total_presentes / total_registrados * 100, 1) if total_registrados > 0 else 0.0
+
+    return AlunoHistoricoResponse(
+        aluno=AlunoRead.model_validate(aluno),
+        trimestre=TrimestreRead.model_validate(trimestre),
+        domingos=items,
+        total_domingos=total_registrados,
+        total_presentes=total_presentes,
+        percentual_presenca=pct,
+    )

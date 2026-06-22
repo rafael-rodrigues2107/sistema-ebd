@@ -3,42 +3,167 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login — EBD</title>
+<title>Login — Sistema EBD</title>
+<meta name="theme-color" content="#4f46e5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EBD">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f4f5f7;
-    --card: #fff;
-    --border: #dde1e6;
-    --text: #212529;
-    --muted: #6c757d;
-    --primary: #0d6efd;
-    --danger: #dc3545;
-    --radius: 8px;
+    --primary: #4f46e5;
+    --primary-dark: #4338ca;
+    --primary-light: #ede9fe;
+    --danger: #ef4444;
+    --danger-light: #fee2e2;
+    --bg: #f1f5f9;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --radius: 14px;
+    --shadow-md: 0 10px 25px -5px rgba(0,0,0,.1), 0 4px 10px -6px rgba(0,0,0,.08);
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
-  .login-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 40px 36px; width: 100%; max-width: 380px; box-shadow: 0 4px 24px rgba(0,0,0,.08); }
-  .brand { text-align: center; margin-bottom: 28px; }
-  .brand .logo { font-size: 2.4rem; }
-  .brand h1 { font-size: 1.3rem; color: var(--primary); margin-top: 8px; }
-  .brand p { font-size: .85rem; color: var(--muted); margin-top: 4px; }
-  .field { margin-bottom: 16px; }
-  .field label { display: block; font-size: .85rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
-  .field input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; }
-  .field input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13,110,253,.15); }
-  .btn-login { width: 100%; padding: 11px; background: var(--primary); color: #fff; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 4px; transition: background .15s; }
-  .btn-login:hover { background: #0b5ed7; }
-  .btn-login:disabled { background: #6ea8fe; cursor: not-allowed; }
-  .alert { padding: 10px 14px; border-radius: 6px; font-size: .9rem; margin-bottom: 16px; display: none; background: #f8d7da; border: 1px solid #f5c2c7; color: #842029; }
-  .footer-links { text-align: center; margin-top: 20px; }
-  .footer-links a { font-size: .82rem; color: var(--muted); text-decoration: none; }
-  .footer-links a:hover { color: var(--primary); }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background-image: radial-gradient(ellipse at 60% 10%, rgba(79,70,229,.08) 0%, transparent 60%);
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 44px 40px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: var(--shadow-md);
+  }
+  .brand {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+  .brand-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--primary-light);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin: 0 auto 16px;
+  }
+  .brand h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -.02em;
+  }
+  .brand p {
+    font-size: .875rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    font-weight: 500;
+  }
+  .field {
+    margin-bottom: 16px;
+  }
+  .field label {
+    display: block;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .field input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: .95rem;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--surface);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .field input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+  }
+  .btn-login {
+    width: 100%;
+    padding: 12px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background .15s, transform .1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-login:hover:not(:disabled) { background: var(--primary-dark); }
+  .btn-login:active:not(:disabled) { transform: scale(.98); }
+  .btn-login:disabled { background: #a5b4fc; cursor: not-allowed; }
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    display: none;
+  }
+  .btn-login.loading .spinner { display: block; }
+  .btn-login.loading .btn-text { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .alert {
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: .875rem;
+    font-weight: 500;
+    margin-bottom: 18px;
+    display: none;
+    background: var(--danger-light);
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+  }
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
+  }
+  .version {
+    text-align: center;
+    font-size: .75rem;
+    color: var(--text-muted);
+  }
 </style>
 </head>
 <body>
-<div class="login-card">
+<div class="card">
   <div class="brand">
-    <div class="logo">⛪</div>
+    <div class="brand-icon">⛪</div>
     <h1>Sistema EBD</h1>
     <p>Escola Bíblica Dominical</p>
   </div>
@@ -47,26 +172,28 @@
 
   <div class="field">
     <label for="username">Usuário</label>
-    <input type="text" id="username" placeholder="ex: admin" autocomplete="username" autofocus>
+    <input type="text" id="username" placeholder="Seu nome de usuário" autocomplete="username" autofocus>
   </div>
   <div class="field">
     <label for="senha">Senha</label>
     <input type="password" id="senha" placeholder="••••••••" autocomplete="current-password">
   </div>
 
-  <button class="btn-login" id="btnLogin" onclick="fazerLogin()">Entrar</button>
+  <button class="btn-login" id="btnLogin" onclick="fazerLogin()">
+    <div class="spinner"></div>
+    <span class="btn-text">Entrar</span>
+  </button>
 
-  <div class="footer-links">
-    <a href="/">← Voltar sem login</a>
-  </div>
+  <div class="divider"></div>
+  <p class="version">Sistema EBD &middot; v1.0</p>
 </div>
 
 <script>
-// Sessão anterior limpa ao acessar a tela de login — evita loops de credenciais antigas
-localStorage.clear();
-
 document.getElementById('senha').addEventListener('keydown', e => {
   if (e.key === 'Enter') fazerLogin();
+});
+document.getElementById('username').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('senha').focus();
 });
 
 async function fazerLogin() {
@@ -74,18 +201,17 @@ async function fazerLogin() {
   const senha    = document.getElementById('senha').value;
   const btn      = document.getElementById('btnLogin');
 
-  if (!username || !senha) {
-    mostrarErro('Preencha usuário e senha.');
-    return;
-  }
+  if (!username || !senha) { mostrarErro('Preencha usuário e senha.'); return; }
 
+  btn.classList.add('loading');
   btn.disabled = true;
-  btn.textContent = 'Entrando…';
+  esconderErro();
 
   try {
     const resp = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ username, senha }),
     });
 
@@ -95,17 +221,16 @@ async function fazerLogin() {
     }
 
     const data = await resp.json();
-    localStorage.setItem('ebd_token',    data.access_token);
+    // Armazena apenas dados de exibição — token fica no cookie httpOnly
     localStorage.setItem('ebd_role',     data.role);
     localStorage.setItem('ebd_nome',     data.nome);
     localStorage.setItem('ebd_turma_id', data.turma_id ?? '');
 
-    // Professores vão para a chamada; administradores vão para os cadastros
     window.location.replace(data.role === 'professor' ? '/' : '/cadastro.html');
   } catch (e) {
     mostrarErro(e.message);
+    btn.classList.remove('loading');
     btn.disabled = false;
-    btn.textContent = 'Entrar';
   }
 }
 
@@ -114,6 +239,10 @@ function mostrarErro(msg) {
   el.textContent = msg;
   el.style.display = 'block';
 }
+function esconderErro() {
+  document.getElementById('alert').style.display = 'none';
+}
 </script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
 </body>
 </html>

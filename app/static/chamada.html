@@ -3,428 +3,1116 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chamada EBD</title>
+<title>Chamada — Sistema EBD</title>
+<meta name="theme-color" content="#4f46e5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EBD">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f4f5f7;
-    --card: #fff;
-    --border: #dde1e6;
-    --text: #212529;
-    --muted: #6c757d;
-    --primary: #0d6efd;
-    --success: #198754;
-    --danger: #dc3545;
-    --radius: 8px;
+    --primary: #4f46e5;
+    --primary-dark: #4338ca;
+    --primary-light: #ede9fe;
+    --success: #10b981;
+    --success-light: #d1fae5;
+    --success-dark: #059669;
+    --danger: #ef4444;
+    --danger-light: #fee2e2;
+    --warning: #f59e0b;
+    --warning-light: #fef3c7;
+    --bg: #f1f5f9;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --text-subtle: #94a3b8;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+    --nav-h: 60px;
+    --bar-h: 72px;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 24px; }
-  .container { max-width: 960px; margin: 0 auto; }
-  h1 { font-size: 1.5rem; margin-bottom: 20px; color: var(--primary); }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
-  .card h2 { font-size: 1.1rem; margin-bottom: 12px; }
-  .row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
-  .field { flex: 1; min-width: 180px; }
-  .field label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 4px; color: var(--muted); }
-  .field select, .field input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: left; font-size: .92rem; }
-  th { background: #f8f9fa; font-weight: 600; color: var(--muted); font-size: .8rem; text-transform: uppercase; }
-  .toggle { display: inline-flex; gap: 4px; }
-  .toggle button { padding: 6px 16px; border: 1px solid var(--border); border-radius: 20px; cursor: pointer; font-size: .85rem; background: #fff; transition: all .15s; }
-  .toggle button.active-presente { background: var(--success); color: #fff; border-color: var(--success); }
-  .toggle button.active-ausente { background: var(--danger); color: #fff; border-color: var(--danger); }
-  .chk { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); }
-  .summary-row { background: #f0f4ff; font-weight: 600; }
-  .summary-row td { padding: 14px 8px; }
-  #visitantes-container { margin-top: 8px; }
-  #visitantes-container .visitante-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
-  #visitantes-container input { flex: 1; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; }
-  .btn { padding: 10px 24px; border: none; border-radius: 6px; font-size: .95rem; cursor: pointer; font-weight: 600; }
-  .btn-primary { background: var(--primary); color: #fff; }
-  .btn-primary:hover { background: #0b5ed7; }
-  .btn-sm { padding: 4px 10px; font-size: .8rem; }
-  .text-right { text-align: right; }
-  .text-center { text-align: center; }
-  .mb-8 { margin-bottom: 8px; }
-  .mt-16 { margin-top: 16px; }
-  .alert { padding: 12px 16px; border-radius: 6px; margin-bottom: 12px; font-size: .9rem; }
-  .alert-info { background: #cff4fc; border: 1px solid #b6effb; }
-  .alert-success { background: #d1e7dd; border: 1px solid #badbcc; }
-  .alert-danger { background: #f8d7da; border: 1px solid #f5c2c7; }
-  #msg { display: none; }
-  .spacer { flex: 1; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding-top: var(--nav-h);
+    padding-bottom: var(--bar-h);
+    min-height: 100vh;
+  }
+
+  /* ── Navbar ── */
+  .navbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--nav-h);
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+  }
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--text);
+    text-decoration: none;
+    letter-spacing: -.02em;
+    flex-shrink: 0;
+  }
+  .nav-logo {
+    width: 34px;
+    height: 34px;
+    background: var(--primary-light);
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .nav-links {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+    overflow: hidden;
+  }
+  .nav-link {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background .15s, color .15s;
+  }
+  .nav-link:hover { background: var(--bg); color: var(--text); }
+  .nav-link.active { background: var(--primary-light); color: var(--primary); }
+  .nav-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .nav-name {
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    display: none;
+  }
+  @media (min-width: 600px) { .nav-name { display: block; } }
+  .btn-logout {
+    padding: 5px 12px;
+    font-size: .8rem;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: .15s;
+  }
+  .btn-logout:hover { background: var(--bg); color: var(--text); }
+
+  /* ── Layout ── */
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 20px 16px;
+  }
+
+  /* ── Selector Card ── */
+  .selector-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .selector-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    cursor: pointer;
+    user-select: none;
+    transition: background .15s;
+  }
+  .selector-header:hover { background: var(--bg); }
+  .selector-title {
+    font-size: .9rem;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .selector-subtitle {
+    font-size: .8rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .selector-arrow {
+    font-size: .75rem;
+    color: var(--text-muted);
+    transition: transform .2s;
+  }
+  .selector-arrow.open { transform: rotate(180deg); }
+  .selector-body {
+    border-top: 1px solid var(--border);
+    padding: 18px;
+    display: none;
+  }
+  .selector-body.open { display: block; }
+  .fields-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  @media (max-width: 500px) { .fields-row { grid-template-columns: 1fr; } }
+  .field label {
+    display: block;
+    font-size: .75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-bottom: 5px;
+  }
+  .field select, .field input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: .9rem;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--surface);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 32px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .field select:focus, .field input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79,70,229,.1);
+  }
+  .field input { background-image: none; padding-right: 12px; }
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: .9rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-primary:hover { background: var(--primary-dark); }
+
+  /* ── Alert ── */
+  .alert {
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-size: .875rem;
+    font-weight: 500;
+    margin-bottom: 14px;
+    display: none;
+    border: 1px solid;
+  }
+  .alert-info    { background: #e0f2fe; border-color: #bae6fd; color: #0369a1; }
+  .alert-success { background: var(--success-light); border-color: #6ee7b7; color: #065f46; }
+  .alert-danger  { background: var(--danger-light); border-color: #fca5a5; color: #b91c1c; }
+
+  /* ── Chamada header ── */
+  .chamada-header {
+    background: var(--primary);
+    color: #fff;
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    display: none;
+  }
+  .chamada-header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .chamada-turma {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -.02em;
+  }
+  .chamada-meta {
+    font-size: .8rem;
+    opacity: .8;
+    margin-top: 4px;
+    font-weight: 500;
+  }
+  .chamada-stats {
+    display: flex;
+    gap: 16px;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+  .stat-pill {
+    text-align: center;
+  }
+  .stat-pill .num {
+    font-size: 1.6rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .stat-pill .lbl {
+    font-size: .65rem;
+    font-weight: 600;
+    opacity: .75;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  .stat-divider {
+    width: 1px;
+    background: rgba(255,255,255,.25);
+    align-self: stretch;
+  }
+
+  /* ── Seção título ── */
+  .section-title {
+    font-size: .75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    padding: 8px 4px 6px;
+  }
+
+  /* ── Student cards ── */
+  .student-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .student-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: var(--shadow-sm);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .student-card.presente {
+    border-color: #6ee7b7;
+    background: linear-gradient(to right, rgba(16,185,129,.04), var(--surface));
+  }
+  .student-card.ausente {
+    border-color: #fca5a5;
+    background: linear-gradient(to right, rgba(239,68,68,.03), var(--surface));
+  }
+  .student-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: .9rem;
+    flex-shrink: 0;
+  }
+  .student-card.presente .student-avatar {
+    background: var(--success-light);
+    color: var(--success-dark);
+  }
+  .student-card.ausente .student-avatar {
+    background: var(--danger-light);
+    color: var(--danger);
+  }
+  .student-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .student-name {
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .student-materials {
+    display: flex;
+    gap: 6px;
+    margin-top: 5px;
+  }
+  .mat-btn {
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .mat-btn.on {
+    background: var(--primary-light);
+    border-color: #a5b4fc;
+    color: var(--primary);
+  }
+  .student-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .pres-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    font-size: .8rem;
+    font-weight: 800;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all .15s;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pres-btn.p-active {
+    background: var(--success);
+    border-color: var(--success);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(16,185,129,.35);
+  }
+  .pres-btn.f-active {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(239,68,68,.3);
+  }
+
+  /* ── Visitantes ── */
+  .visitantes-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .visitantes-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .visitantes-title {
+    font-size: .9rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .btn-add-visitante {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--primary-light);
+    color: var(--primary);
+    border: none;
+    border-radius: 6px;
+    font-size: .8rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-add-visitante:hover { background: #ddd6fe; }
+  .visitante-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .visitante-row input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: .875rem;
+    font-family: inherit;
+    transition: border-color .15s;
+  }
+  .visitante-row input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79,70,229,.1);
+  }
+  .btn-rm {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: none;
+    background: var(--danger-light);
+    color: var(--danger);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background .15s;
+  }
+  .btn-rm:hover { background: #fecaca; }
+  .visitantes-empty {
+    font-size: .85rem;
+    color: var(--text-subtle);
+    text-align: center;
+    padding: 8px 0;
+    font-style: italic;
+  }
+
+  /* ── Fechamento ── */
+  .fechamento-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .fechamento-title {
+    font-size: .9rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .fechamento-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 400px) { .fechamento-stats-grid { grid-template-columns: repeat(2, 1fr); } }
+  .fstat {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 10px 12px;
+    text-align: center;
+  }
+  .fstat .fval {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.1;
+  }
+  .fstat .flbl {
+    font-size: .68rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-top: 2px;
+  }
+  .fstat.green .fval { color: var(--success); }
+  .fstat.red .fval   { color: var(--danger); }
+  .fstat.blue .fval  { color: var(--primary); }
+  .fechamento-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 400px) { .fechamento-inputs { grid-template-columns: 1fr; } }
+  .fechamento-inputs .field:last-child {
+    grid-column: 1 / -1;
+  }
+
+  /* ── Save bar (fixed bottom) ── */
+  .save-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: var(--bar-h);
+    background: rgba(255,255,255,.95);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    gap: 16px;
+    z-index: 100;
+    display: none;
+  }
+  .save-bar.visible { display: flex; }
+  .save-info {
+    display: flex;
+    flex-direction: column;
+  }
+  .save-pct {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--success);
+    line-height: 1;
+  }
+  .save-detail {
+    font-size: .75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+  .btn-save {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: .95rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+    flex-shrink: 0;
+  }
+  .btn-save:hover:not(:disabled) { background: var(--primary-dark); }
+  .btn-save:active:not(:disabled) { transform: scale(.97); }
+  .btn-save:disabled { background: #a5b4fc; cursor: not-allowed; }
+  .btn-save .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    display: none;
+  }
+  .btn-save.loading .spinner { display: block; }
+  .btn-save.loading .btn-save-text { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Print ── */
+  @media print {
+    @page { size: A4 portrait; margin: 12mm; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .no-print { display: none !important; }
+    .navbar, .save-bar, .selector-card, .btn-primary, .btn-add-visitante, .btn-rm, .pres-btn, .mat-btn { display: none !important; }
+    body { padding: 0; background: #fff; }
+    .chamada-header {
+      display: block !important;
+      background: #4f46e5 !important;
+      -webkit-print-color-adjust: exact !important;
+      border-radius: 0 !important;
+      margin-bottom: 16pt !important;
+    }
+    .student-card {
+      break-inside: avoid;
+      box-shadow: none !important;
+      border: 1px solid #e2e8f0 !important;
+      margin-bottom: 4pt !important;
+      border-radius: 4pt !important;
+    }
+    .student-card::after {
+      content: '';
+      display: block;
+      width: 100%;
+    }
+    /* Print presença como quadrinho */
+    .student-actions::before {
+      content: '☐ P   ☐ F';
+      font-size: 10pt;
+      font-family: sans-serif;
+    }
+  }
 </style>
 </head>
 <body>
-<div class="container">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-    <h1 style="margin-bottom:0;">📋 Chamada — Escola Bíblica Dominical</h1>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <span id="userGreeting" style="font-size:.82rem;color:var(--muted);"></span>
-      <a id="navDashboard" href="/dashboard.html" style="font-size:.85rem;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;">📈 Dashboard</a>
-      <a id="navFechamento" href="/fechamento.html" style="font-size:.85rem;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;">📊 Fechamento</a>
-      <a id="navCadastros" href="/cadastro.html" style="font-size:.85rem;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;">⚙️ Cadastros</a>
-      <button onclick="fazerLogout()" style="font-size:.85rem;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:6px;padding:6px 14px;cursor:pointer;">Sair</button>
-    </div>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <a class="nav-brand" href="/">
+    <div class="nav-logo">⛪</div>
+    <span>EBD</span>
+  </a>
+  <div class="nav-links" id="navLinks">
+    <a href="/" class="nav-link active">Chamada</a>
+    <a href="/fechamento.html" class="nav-link" id="navFechamento" style="display:none">Fechamento</a>
+    <a href="/dashboard.html" class="nav-link" id="navDashboard" style="display:none">Dashboard</a>
+    <a href="/cadastro.html" class="nav-link" id="navCadastros" style="display:none">Cadastros</a>
   </div>
+  <div class="nav-user">
+    <span class="nav-name" id="navNome"></span>
+    <button class="btn-logout" onclick="fazerLogout()">Sair</button>
+  </div>
+</nav>
+
+<div class="container">
 
   <div id="msg" class="alert"></div>
 
-  <!-- Filtros -->
-  <div class="card">
-    <div class="row">
-      <div class="field">
-        <label for="trimestreSelect">Trimestre</label>
-        <select id="trimestreSelect"><option value="">Carregando…</option></select>
+  <!-- Seletor de chamada -->
+  <div class="selector-card">
+    <div class="selector-header" onclick="toggleSelector()" id="selectorHeader">
+      <div>
+        <div class="selector-title">📅 Selecionar Chamada</div>
+        <div class="selector-subtitle" id="selectorSubtitle">Escolha o trimestre, domingo e turma</div>
       </div>
-      <div class="field">
-        <label for="domingoSelect">Domingo</label>
-        <select id="domingoSelect"><option value="">Selecione um trimestre primeiro</option></select>
-      </div>
-      <div class="field">
-        <label for="turmaSelect">Classe</label>
-        <select id="turmaSelect"><option value="">Carregando…</option></select>
-      </div>
-      <div class="field" style="display:flex;align-items:flex-end;">
-        <button class="btn btn-primary" onclick="carregarPainel()">🔍 Abrir Chamada</button>
+      <span class="selector-arrow open" id="selectorArrow">▼</span>
+    </div>
+    <div class="selector-body open" id="selectorBody">
+      <div class="fields-row">
+        <div class="field">
+          <label>Trimestre</label>
+          <select id="trimestreSelect"><option value="">Carregando…</option></select>
+        </div>
+        <div class="field">
+          <label>Domingo</label>
+          <select id="domingoSelect"><option value="">Selecione um trimestre</option></select>
+        </div>
+        <div class="field">
+          <label>Turma / Classe</label>
+          <select id="turmaSelect"><option value="">Carregando…</option></select>
+        </div>
+        <div class="field" style="display:flex;align-items:flex-end;gap:8px;">
+          <button class="btn-primary" onclick="carregarPainel()" style="width:100%;justify-content:center;">
+            Abrir Chamada
+          </button>
+          <button onclick="imprimirLista()" title="Imprimir lista" style="padding:10px 12px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:1rem;" id="btnImprimir" class="no-print" style="display:none;">🖨️</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Painel da Chamada -->
-  <div id="painel" style="display:none;">
-    <div class="card">
-      <h2 id="painelTitulo">Chamada</h2>
-      <div id="infoDomingo" class="mb-8" style="color:var(--muted);font-size:.9rem;"></div>
+  <!-- Cabeçalho da chamada ativa -->
+  <div class="chamada-header" id="chamadaHeader">
+    <div class="chamada-header-top">
+      <div>
+        <div class="chamada-turma" id="chamadaTurma">—</div>
+        <div class="chamada-meta" id="chamadaMeta">—</div>
+      </div>
+      <div class="chamada-stats">
+        <div class="stat-pill">
+          <div class="num" id="hdrPresentes">0</div>
+          <div class="lbl">Presentes</div>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-pill">
+          <div class="num" id="hdrTotal">0</div>
+          <div class="lbl">Total</div>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-pill">
+          <div class="num" id="hdrPct">—</div>
+          <div class="lbl">Freq.</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Aluno</th>
-            <th class="text-center">Presença</th>
-            <th class="text-center">Bíblia</th>
-            <th class="text-center">Revista</th>
-          </tr>
-        </thead>
-        <tbody id="alunosTbody"></tbody>
-        <tfoot>
-          <tr class="summary-row">
-            <td>Totais</td>
-            <td class="text-center" id="totalPresentes">—</td>
-            <td class="text-center" id="totalBiblias">—</td>
-            <td class="text-center" id="totalRevistas">—</td>
-          </tr>
-        </tfoot>
-      </table>
+  <!-- Lista de alunos -->
+  <div id="painelAlunos" style="display:none">
+    <div class="section-title">ALUNOS MATRICULADOS</div>
+    <div class="student-list" id="studentList"></div>
 
-      <!-- Visitantes -->
-      <div class="mt-16">
-        <h3 style="font-size:1rem;margin-bottom:8px;">👥 Visitantes</h3>
-        <div id="visitantes-container"></div>
-        <button class="btn btn-sm btn-primary" onclick="adicionarVisitante()" style="margin-top:6px;">+ Adicionar Visitante</button>
+    <!-- Visitantes -->
+    <div class="visitantes-card">
+      <div class="visitantes-header">
+        <span class="visitantes-title">👥 Visitantes</span>
+        <button class="btn-add-visitante" onclick="adicionarVisitante()">+ Adicionar</button>
+      </div>
+      <div id="visitantesContainer">
+        <p class="visitantes-empty" id="visitantesEmpty">Nenhum visitante. Clique em "+ Adicionar" para registrar.</p>
       </div>
     </div>
 
     <!-- Fechamento -->
-    <div class="card">
-      <h2>📊 Fechamento do Domingo</h2>
-      <div class="row">
-        <div class="field">
-          <label>Matriculados</label>
-          <input type="number" id="fTotalMatriculados" value="0" min="0">
+    <div class="fechamento-card">
+      <div class="fechamento-title">📊 Resumo do Domingo</div>
+      <div class="fechamento-stats-grid">
+        <div class="fstat blue">
+          <div class="fval" id="fMatriculados">0</div>
+          <div class="flbl">Matriculados</div>
         </div>
-        <div class="field">
-          <label>Presentes</label>
-          <input type="number" id="fTotalPresentes" value="0" min="0">
+        <div class="fstat green">
+          <div class="fval" id="fPresentes">0</div>
+          <div class="flbl">Presentes</div>
         </div>
-        <div class="field">
-          <label>Visitantes</label>
-          <input type="number" id="fTotalVisitantes" value="0" min="0">
+        <div class="fstat red">
+          <div class="fval" id="fAusentes">0</div>
+          <div class="flbl">Ausentes</div>
         </div>
-        <div class="field">
-          <label>Ausentes</label>
-          <input type="number" id="fTotalAusentes" value="0" min="0">
+        <div class="fstat">
+          <div class="fval" id="fVisitantes">0</div>
+          <div class="flbl">Visitantes</div>
+        </div>
+        <div class="fstat">
+          <div class="fval" id="fBiblias">0</div>
+          <div class="flbl">Bíblias</div>
+        </div>
+        <div class="fstat">
+          <div class="fval" id="fRevistas">0</div>
+          <div class="flbl">Revistas</div>
         </div>
       </div>
-      <div class="row">
-        <div class="field">
-          <label>Bíblias</label>
-          <input type="number" id="fTotalBiblias" value="0" min="0">
-        </div>
-        <div class="field">
-          <label>Revistas</label>
-          <input type="number" id="fTotalRevistas" value="0" min="0">
-        </div>
+      <div class="fechamento-inputs">
         <div class="field">
           <label>Ofertas (R$)</label>
-          <input type="number" id="fValorOfertas" value="0.00" min="0" step="0.01">
+          <input type="number" id="fOfertas" value="0.00" min="0" step="0.01" placeholder="0,00">
         </div>
-        <div class="field"></div>
-      </div>
-      <div class="field mt-16">
-        <label>Observações</label>
-        <input type="text" id="fObservacoes" placeholder="Ex: Culto missionário, batismo…">
+        <div class="field">
+          <label>Observações</label>
+          <input type="text" id="fObservacoes" placeholder="Ex: Culto missionário…">
+        </div>
       </div>
     </div>
-
-    <button class="btn btn-primary" onclick="salvarChamada()" style="font-size:1rem;padding:12px 36px;">
-      💾 Salvar Chamada
-    </button>
   </div>
+
+</div>
+
+<!-- Barra de salvar (fixa no fundo) -->
+<div class="save-bar" id="saveBar">
+  <div class="save-info">
+    <div class="save-pct" id="savePct">—</div>
+    <div class="save-detail" id="saveDetail">frequência</div>
+  </div>
+  <button class="btn-save" id="btnSalvar" onclick="salvarChamada()">
+    <div class="spinner"></div>
+    <span class="btn-save-text">💾 Salvar Chamada</span>
+  </button>
 </div>
 
 <script>
-// ── Guarda de acesso: exige login ──
+// ── Estado ──
+let turmaId = null, trimestreId = null, domingoId = null;
+const role    = localStorage.getItem('ebd_role') || '';
+const nome    = localStorage.getItem('ebd_nome') || '';
+const turmaLS = localStorage.getItem('ebd_turma_id') || '';
+
+// ── Guarda de acesso ──
 (function () {
-  if (!localStorage.getItem('ebd_token')) {
+  if (!role) {
     localStorage.clear();
     window.location.replace('/login.html');
   }
 })();
 
-// ── Estado global ──
-let turmaId = null;
-let trimestreId = null;
-let domingoId = null;
-let painelData = null;
-
-function _authH() {
-  return { 'Authorization': `Bearer ${localStorage.getItem('ebd_token')}` };
-}
-
-function fazerLogout() {
-  localStorage.clear();
-  window.location.replace('/login.html');
-}
-
-function configurarNavegacao() {
-  const nome  = localStorage.getItem('ebd_nome') || '';
-  const role  = localStorage.getItem('ebd_role');
-  document.getElementById('userGreeting').textContent = nome ? `Olá, ${nome}` : '';
-  if (role === 'professor') {
-    document.getElementById('navDashboard').style.display  = 'none';
-    document.getElementById('navFechamento').style.display = 'none';
-    document.getElementById('navCadastros').style.display  = 'none';
-  }
-}
-
 // ── Inicialização ──
 document.addEventListener('DOMContentLoaded', () => {
-  configurarNavegacao();
+  document.getElementById('navNome').textContent = nome ? `Olá, ${nome.split(' ')[0]}` : '';
+
+  if (role === 'admin') {
+    document.getElementById('navFechamento').style.display = '';
+    document.getElementById('navDashboard').style.display = '';
+    document.getElementById('navCadastros').style.display = '';
+  }
+
   carregarTrimestres();
   carregarTurmas();
 });
 
+function fazerLogout() {
+  fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).finally(() => {
+    localStorage.clear();
+    window.location.replace('/login.html');
+  });
+}
+
+// ── Seletor toggle ──
+function toggleSelector() {
+  const body  = document.getElementById('selectorBody');
+  const arrow = document.getElementById('selectorArrow');
+  const open  = body.classList.toggle('open');
+  arrow.classList.toggle('open', open);
+}
+
+function fecharSeletor(subtitulo) {
+  document.getElementById('selectorBody').classList.remove('open');
+  document.getElementById('selectorArrow').classList.remove('open');
+  if (subtitulo) document.getElementById('selectorSubtitle').textContent = subtitulo;
+}
+
+// ── Carregamento de selects ──
 async function carregarTrimestres() {
   const sel = document.getElementById('trimestreSelect');
   try {
-    const resp = await fetch('/api/trimestres/');
-    const trimestres = await resp.json();
+    const resp = await fetch('/api/trimestres/', { credentials: 'include' });
+    const lista = await resp.json();
     sel.innerHTML = '<option value="">Selecione…</option>';
-    trimestres.forEach(t => {
-      sel.innerHTML += `<option value="${t.id}">${t.ano} — ${t.numero}º Trim. (${t.data_inicio} a ${t.data_fim})</option>`;
+    lista.forEach(t => {
+      sel.innerHTML += `<option value="${t.id}">${t.ano} — ${t.numero}º Trimestre</option>`;
     });
-    // Se houver trimestre ativo, seleciona
-    const ativoResp = await fetch('/api/trimestres/ativo').catch(() => null);
-    if (ativoResp && ativoResp.ok) {
-      const ativo = await ativoResp.json();
+    const ativoR = await fetch('/api/trimestres/ativo', { credentials: 'include' }).catch(() => null);
+    if (ativoR && ativoR.ok) {
+      const ativo = await ativoR.json();
       sel.value = ativo.id;
       carregarDomingos(ativo.id);
     }
-  } catch (e) {
-    sel.innerHTML = '<option value="">Erro ao carregar</option>';
-  }
+  } catch { sel.innerHTML = '<option value="">Erro ao carregar</option>'; }
 }
 
 async function carregarTurmas() {
   const sel = document.getElementById('turmaSelect');
   try {
-    const resp = await fetch('/api/turmas/');
-    const turmas = await resp.json();
+    const resp = await fetch('/api/turmas/', { credentials: 'include' });
+    const lista = await resp.json();
     sel.innerHTML = '<option value="">Selecione…</option>';
-    turmas.forEach(t => {
-      sel.innerHTML += `<option value="${t.id}">${t.nome} (${t.faixa_etaria})</option>`;
+    lista.forEach(t => {
+      sel.innerHTML += `<option value="${t.id}">${t.nome}</option>`;
     });
-    // Professores: travar o select na própria turma
-    if (localStorage.getItem('ebd_role') === 'professor') {
-      const tid = localStorage.getItem('ebd_turma_id');
-      if (tid) {
-        sel.value = tid;
-        sel.disabled = true;
-      } else {
-        sel.innerHTML = '<option value="">Sem turma vinculada — contate o admin</option>';
-        sel.disabled = true;
-      }
+    if (role === 'professor' && turmaLS) {
+      sel.value = turmaLS;
+      sel.disabled = true;
     }
-  } catch (e) {
-    sel.innerHTML = '<option value="">Erro ao carregar</option>';
-  }
+  } catch { sel.innerHTML = '<option value="">Erro ao carregar</option>'; }
 }
 
-document.getElementById('trimestreSelect').addEventListener('change', function() {
+document.getElementById('trimestreSelect').addEventListener('change', function () {
   const tid = parseInt(this.value);
   if (tid) carregarDomingos(tid);
 });
 
-async function carregarDomingos(trimestreIdParam) {
+async function carregarDomingos(tId) {
   const sel = document.getElementById('domingoSelect');
   sel.innerHTML = '<option value="">Carregando…</option>';
   try {
-    const resp = await fetch(`/api/trimestres/${trimestreIdParam}/domingos`);
-    const domingos = await resp.json();
+    const resp = await fetch(`/api/trimestres/${tId}/domingos`, { credentials: 'include' });
+    const lista = await resp.json();
     sel.innerHTML = '<option value="">Selecione…</option>';
-    domingos.forEach(d => {
-      const data = new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR');
-      sel.innerHTML += `<option value="${d.id}">${d.numero}º Domingo — ${data}</option>`;
+    lista.forEach(d => {
+      const dt = new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR');
+      sel.innerHTML += `<option value="${d.id}">${d.numero}º Domingo — ${dt}</option>`;
     });
-  } catch (e) {
-    sel.innerHTML = '<option value="">Erro ao carregar</option>';
-  }
+    // Seleciona automaticamente o domingo mais próximo da data atual
+    if (lista.length) {
+      const hoje = new Date().toISOString().slice(0, 10);
+      const prox = lista.reduce((prev, cur) => {
+        return Math.abs(new Date(cur.data) - new Date(hoje)) < Math.abs(new Date(prev.data) - new Date(hoje)) ? cur : prev;
+      });
+      sel.value = prox.id;
+    }
+  } catch { sel.innerHTML = '<option value="">Erro ao carregar</option>'; }
 }
 
-// ── Carregar Painel ──
+// ── Carregar painel de chamada ──
 async function carregarPainel() {
-  turmaId = parseInt(document.getElementById('turmaSelect').value);
+  turmaId     = parseInt(document.getElementById('turmaSelect').value);
   trimestreId = parseInt(document.getElementById('trimestreSelect').value);
-  domingoId = parseInt(document.getElementById('domingoSelect').value);
+  domingoId   = parseInt(document.getElementById('domingoSelect').value);
 
   if (!turmaId || !trimestreId || !domingoId) {
-    mostrarMsg('Selecione Classe, Trimestre e Domingo.', 'info');
+    mostrarMsg('Selecione Trimestre, Domingo e Turma.', 'info');
     return;
   }
 
   esconderMsg();
   try {
-    const resp = await fetch(`/api/turmas/${turmaId}/painel?trimestre_id=${trimestreId}&domingo_id=${domingoId}`, { headers: _authH() });
+    const resp = await fetch(
+      `/api/turmas/${turmaId}/painel?trimestre_id=${trimestreId}&domingo_id=${domingoId}`,
+      { credentials: 'include' }
+    );
     if (!resp.ok) throw new Error((await resp.json()).detail || 'Erro');
-    painelData = await resp.json();
-    renderizarPainel(painelData);
+    const data = await resp.json();
+    renderizarPainel(data);
   } catch (e) {
-    mostrarMsg('Erro: ' + e.message, 'danger');
+    mostrarMsg('Erro ao carregar: ' + e.message, 'danger');
   }
 }
 
 function renderizarPainel(data) {
-  document.getElementById('painel').style.display = 'block';
-  document.getElementById('painelTitulo').textContent = `📋 ${data.turma.nome} — ${data.turma.faixa_etaria}`;
-  const domData = new Date(data.domingo.data + 'T00:00:00').toLocaleDateString('pt-BR');
-  document.getElementById('infoDomingo').textContent =
-    `${domData} — ${data.domingo.numero}º Domingo | Tema: ${data.domingo.tema_licao || '(não informado)'} | Trimestre: ${data.trimestre.ano}/${data.trimestre.numero}º`;
+  // Header
+  document.getElementById('chamadaHeader').style.display = 'block';
+  document.getElementById('chamadaTurma').textContent = `${data.turma.nome} — ${data.turma.faixa_etaria}`;
+  const domingoData = new Date(data.domingo.data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+  document.getElementById('chamadaMeta').textContent =
+    `${domingoData} · ${data.domingo.numero}º Domingo · Tema: ${data.domingo.tema_licao || 'não informado'}`;
 
-  // Tabela de alunos
-  const tbody = document.getElementById('alunosTbody');
-  tbody.innerHTML = '';
+  // Fecha seletor
+  const turmaNome = data.turma.nome;
+  const domData   = new Date(data.domingo.data + 'T00:00:00').toLocaleDateString('pt-BR');
+  fecharSeletor(`${turmaNome} · ${domData}`);
+  document.getElementById('btnImprimir').style.display = '';
+
+  // Alunos
+  const list = document.getElementById('studentList');
+  list.innerHTML = '';
   data.alunos.forEach(a => {
-    const presente = a.presente === true;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${esc(a.nome)}</td>
-      <td class="text-center">
-        <div class="toggle">
-          <button class="${presente ? 'active-presente' : ''}" data-aluno="${a.aluno_id}" data-val="1" onclick="togglePresenca(this)">P</button>
-          <button class="${!presente ? 'active-ausente' : ''}" data-aluno="${a.aluno_id}" data-val="0" onclick="togglePresenca(this)">F</button>
+    const card = document.createElement('div');
+    card.className = 'student-card' + (a.presente === true ? ' presente' : a.presente === false ? ' ausente' : '');
+    card.id = `sc_${a.aluno_id}`;
+    const inicial = a.nome.trim()[0].toUpperCase();
+    card.innerHTML = `
+      <div class="student-avatar" id="av_${a.aluno_id}">${inicial}</div>
+      <div class="student-info">
+        <div class="student-name">${esc(a.nome)}</div>
+        <div class="student-materials">
+          <button class="mat-btn ${a.trouxe_biblia ? 'on' : ''}" id="bib_${a.aluno_id}" onclick="toggleMat(this,'bib',${a.aluno_id})">📖 Bíblia</button>
+          <button class="mat-btn ${a.trouxe_revista ? 'on' : ''}" id="rev_${a.aluno_id}" onclick="toggleMat(this,'rev',${a.aluno_id})">📰 Revista</button>
         </div>
-        <input type="hidden" id="presenca_${a.aluno_id}" value="${presente ? '1' : '0'}">
-      </td>
-      <td class="text-center"><input type="checkbox" class="chk" id="biblia_${a.aluno_id}" ${a.trouxe_biblia ? 'checked' : ''}></td>
-      <td class="text-center"><input type="checkbox" class="chk" id="revista_${a.aluno_id}" ${a.trouxe_revista ? 'checked' : ''}></td>
+      </div>
+      <div class="student-actions">
+        <button class="pres-btn ${a.presente === true ? 'p-active' : ''}" id="pBtn_${a.aluno_id}" data-aluno="${a.aluno_id}" data-val="1" onclick="togglePresenca(${a.aluno_id}, true)">P</button>
+        <button class="pres-btn ${a.presente === false ? 'f-active' : ''}" id="fBtn_${a.aluno_id}" data-aluno="${a.aluno_id}" data-val="0" onclick="togglePresenca(${a.aluno_id}, false)">F</button>
+      </div>
+      <input type="hidden" id="pres_${a.aluno_id}" value="${a.presente === true ? '1' : a.presente === false ? '0' : ''}">
     `;
-    tbody.appendChild(tr);
+    list.appendChild(card);
   });
 
-  // Visitantes existentes
-  const vContainer = document.getElementById('visitantes-container');
-  vContainer.innerHTML = '';
-  data.visitantes.forEach(v => {
-    vContainer.insertAdjacentHTML('beforeend', rowVisitante(v.nome, v.chamada_id));
-  });
+  // Visitantes
+  const vc = document.getElementById('visitantesContainer');
+  vc.innerHTML = '';
+  if (data.visitantes.length === 0) {
+    vc.innerHTML = '<p class="visitantes-empty" id="visitantesEmpty">Nenhum visitante. Clique em "+ Adicionar" para registrar.</p>';
+  } else {
+    data.visitantes.forEach(v => adicionarVisitante(v.nome));
+  }
 
   // Fechamento
   if (data.fechamento) {
-    document.getElementById('fTotalMatriculados').value = data.fechamento.total_matriculados;
-    document.getElementById('fTotalPresentes').value = data.fechamento.total_presentes;
-    document.getElementById('fTotalVisitantes').value = data.fechamento.total_visitantes;
-    document.getElementById('fTotalAusentes').value = data.fechamento.total_ausentes;
-    document.getElementById('fTotalBiblias').value = data.fechamento.total_biblias;
-    document.getElementById('fTotalRevistas').value = data.fechamento.total_revistas;
-    document.getElementById('fValorOfertas').value = data.fechamento.valor_ofertas;
+    document.getElementById('fOfertas').value = data.fechamento.valor_ofertas;
     document.getElementById('fObservacoes').value = data.fechamento.observacoes || '';
   } else {
-    // Preenche contagens automáticas
-    const presentes = data.alunos.filter(a => a.presente === true).length;
-    document.getElementById('fTotalMatriculados').value = data.alunos.length;
-    document.getElementById('fTotalPresentes').value = presentes;
-    document.getElementById('fTotalAusentes').value = data.alunos.length - presentes;
-    document.getElementById('fTotalVisitantes').value = data.visitantes.filter(v => v.presente).length;
-    document.getElementById('fTotalBiblias').value = data.alunos.filter(a => a.trouxe_biblia).length;
-    document.getElementById('fTotalRevistas').value = data.alunos.filter(a => a.trouxe_revista).length;
-    document.getElementById('fValorOfertas').value = '0.00';
+    document.getElementById('fOfertas').value = '0.00';
     document.getElementById('fObservacoes').value = '';
   }
 
+  document.getElementById('painelAlunos').style.display = 'block';
+  document.getElementById('saveBar').classList.add('visible');
+  atualizarTotais();
+
+  // Scroll para o painel
+  document.getElementById('chamadaHeader').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Toggles ──
+function togglePresenca(alunoId, presente) {
+  const pBtn = document.getElementById(`pBtn_${alunoId}`);
+  const fBtn = document.getElementById(`fBtn_${alunoId}`);
+  const hidInput = document.getElementById(`pres_${alunoId}`);
+  const card = document.getElementById(`sc_${alunoId}`);
+  const av   = document.getElementById(`av_${alunoId}`);
+
+  pBtn.classList.toggle('p-active', presente);
+  fBtn.classList.toggle('f-active', !presente);
+  hidInput.value = presente ? '1' : '0';
+
+  card.classList.remove('presente', 'ausente');
+  av.classList = 'student-avatar';
+  if (presente) { card.classList.add('presente'); }
+  else          { card.classList.add('ausente'); }
+
   atualizarTotais();
 }
 
-function togglePresenca(btn) {
-  const alunoId = btn.dataset.aluno;
-  const isPresente = btn.dataset.val === '1';
-
-  document.getElementById('presenca_' + alunoId).value = isPresente ? '1' : '0';
-
-  // Radio exclusivo: desativa os dois antes de ativar apenas o clicado
-  const grupo = btn.parentElement;
-  const btnP = grupo.querySelector('[data-val="1"]');
-  const btnF = grupo.querySelector('[data-val="0"]');
-  btnP.classList.remove('active-presente');
-  btnF.classList.remove('active-ausente');
-
-  if (isPresente) {
-    btnP.classList.add('active-presente');
-  } else {
-    btnF.classList.add('active-ausente');
-  }
-
+function toggleMat(btn) {
+  btn.classList.toggle('on');
   atualizarTotais();
-}
-
-function atualizarTotais() {
-  let presentes = 0, biblias = 0, revistas = 0;
-  document.querySelectorAll('[id^="presenca_"]').forEach(el => {
-    if (el.value === '1') presentes++;
-  });
-  document.querySelectorAll('[id^="biblia_"]').forEach(el => {
-    if (el.checked) biblias++;
-  });
-  document.querySelectorAll('[id^="revista_"]').forEach(el => {
-    if (el.checked) revistas++;
-  });
-
-  document.getElementById('totalPresentes').textContent = presentes;
-  document.getElementById('totalBiblias').textContent = biblias;
-  document.getElementById('totalRevistas').textContent = revistas;
-
-  // Atualiza fechamento automaticamente
-  const matriculados = document.querySelectorAll('[id^="presenca_"]').length;
-  const visitantes = document.querySelectorAll('.visitante-row').length;
-  document.getElementById('fTotalMatriculados').value = matriculados;
-  document.getElementById('fTotalPresentes').value = presentes;
-  document.getElementById('fTotalAusentes').value = matriculados - presentes;
-  document.getElementById('fTotalVisitantes').value = visitantes;
-  document.getElementById('fTotalBiblias').value = biblias;
-  document.getElementById('fTotalRevistas').value = revistas;
 }
 
 // ── Visitantes ──
-function rowVisitante(nome = '', id = null) {
-  return `<div class="visitante-row">
+function adicionarVisitante(nome = '') {
+  const empty = document.getElementById('visitantesEmpty');
+  if (empty) empty.remove();
+
+  const vc  = document.getElementById('visitantesContainer');
+  const div = document.createElement('div');
+  div.className = 'visitante-row';
+  div.innerHTML = `
     <input type="text" class="visitante-nome" value="${esc(nome)}" placeholder="Nome do visitante">
-    <button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="this.parentElement.remove();atualizarTotais();">✕</button>
-  </div>`;
+    <button class="btn-rm" onclick="removerVisitante(this)">✕</button>
+  `;
+  vc.appendChild(div);
+  div.querySelector('input').focus();
+  atualizarTotais();
 }
 
-function adicionarVisitante() {
-  document.getElementById('visitantes-container').insertAdjacentHTML('beforeend', rowVisitante());
+function removerVisitante(btn) {
+  btn.parentElement.remove();
+  const vc = document.getElementById('visitantesContainer');
+  if (!vc.querySelector('.visitante-row')) {
+    vc.innerHTML = '<p class="visitantes-empty" id="visitantesEmpty">Nenhum visitante. Clique em "+ Adicionar" para registrar.</p>';
+  }
   atualizarTotais();
+}
+
+// ── Totais ──
+function atualizarTotais() {
+  const presInputs = document.querySelectorAll('[id^="pres_"]');
+  let presentes = 0, ausentes = 0, sem_registro = 0;
+  let biblias = 0, revistas = 0;
+  const total = presInputs.length;
+
+  presInputs.forEach(el => {
+    if (el.value === '1') presentes++;
+    else if (el.value === '0') ausentes++;
+    else sem_registro++;
+  });
+
+  document.querySelectorAll('[id^="bib_"]').forEach(btn => { if (btn.classList.contains('on')) biblias++; });
+  document.querySelectorAll('[id^="rev_"]').forEach(btn => { if (btn.classList.contains('on')) revistas++; });
+
+  const visitantes = document.querySelectorAll('.visitante-row').length;
+
+  // Header stats
+  document.getElementById('hdrPresentes').textContent = presentes;
+  document.getElementById('hdrTotal').textContent     = total;
+  const pct = total > 0 ? Math.round(presentes / total * 100) : 0;
+  document.getElementById('hdrPct').textContent       = total > 0 ? pct + '%' : '—';
+
+  // Fechamento read-only
+  document.getElementById('fMatriculados').textContent = total;
+  document.getElementById('fPresentes').textContent    = presentes;
+  document.getElementById('fAusentes').textContent     = ausentes + sem_registro;
+  document.getElementById('fVisitantes').textContent   = visitantes;
+  document.getElementById('fBiblias').textContent      = biblias;
+  document.getElementById('fRevistas').textContent     = revistas;
+
+  // Save bar
+  document.getElementById('savePct').textContent  = total > 0 ? pct + '%' : '—';
+  document.getElementById('saveDetail').textContent = `${presentes} de ${total} presentes`;
 }
 
 // ── Salvar ──
@@ -434,15 +1122,21 @@ async function salvarChamada() {
     return;
   }
 
-  // Coleta chamadas de alunos
+  const btn = document.getElementById('btnSalvar');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  esconderMsg();
+
+  // Coleta alunos
   const chamadas = [];
-  document.querySelectorAll('[id^="presenca_"]').forEach(el => {
-    const alunoId = parseInt(el.id.replace('presenca_', ''));
+  document.querySelectorAll('[id^="pres_"]').forEach(el => {
+    const alunoId = parseInt(el.id.replace('pres_', ''));
+    const val = el.value;
     chamadas.push({
       aluno_id: alunoId,
-      presente: el.value === '1',
-      trouxe_biblia: document.getElementById('biblia_' + alunoId)?.checked || false,
-      trouxe_revista: document.getElementById('revista_' + alunoId)?.checked || false,
+      presente: val === '1',
+      trouxe_biblia: document.getElementById(`bib_${alunoId}`)?.classList.contains('on') || false,
+      trouxe_revista: document.getElementById(`rev_${alunoId}`)?.classList.contains('on') || false,
     });
   });
 
@@ -453,48 +1147,51 @@ async function salvarChamada() {
     if (nome) visitantes.push({ nome, presente: true });
   });
 
-  // Fechamento
+  // Coleta fechamento (campos read-only calculados + campos editáveis)
   const fechamento = {
-    total_matriculados: parseInt(document.getElementById('fTotalMatriculados').value) || 0,
-    total_presentes: parseInt(document.getElementById('fTotalPresentes').value) || 0,
-    total_visitantes: parseInt(document.getElementById('fTotalVisitantes').value) || 0,
-    total_ausentes: parseInt(document.getElementById('fTotalAusentes').value) || 0,
-    total_biblias: parseInt(document.getElementById('fTotalBiblias').value) || 0,
-    total_revistas: parseInt(document.getElementById('fTotalRevistas').value) || 0,
-    valor_ofertas: parseFloat(document.getElementById('fValorOfertas').value) || 0,
-    observacoes: document.getElementById('fObservacoes').value || null,
-  };
-
-  const payload = {
-    trimestre_id: trimestreId,
-    domingo_id: domingoId,
-    chamadas,
-    visitantes,
-    fechamento,
+    total_matriculados: parseInt(document.getElementById('fMatriculados').textContent) || 0,
+    total_presentes:    parseInt(document.getElementById('fPresentes').textContent) || 0,
+    total_visitantes:   parseInt(document.getElementById('fVisitantes').textContent) || 0,
+    total_ausentes:     parseInt(document.getElementById('fAusentes').textContent) || 0,
+    total_biblias:      parseInt(document.getElementById('fBiblias').textContent) || 0,
+    total_revistas:     parseInt(document.getElementById('fRevistas').textContent) || 0,
+    valor_ofertas:      parseFloat(document.getElementById('fOfertas').value) || 0,
+    observacoes:        document.getElementById('fObservacoes').value.trim() || null,
   };
 
   try {
     const resp = await fetch(`/api/turmas/${turmaId}/chamada`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ..._authH() },
-      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ trimestre_id: trimestreId, domingo_id: domingoId, chamadas, visitantes, fechamento }),
     });
     if (!resp.ok) throw new Error((await resp.json()).detail || 'Erro ao salvar');
-    mostrarMsg('✅ Chamada salva com sucesso!', 'success');
+    mostrarMsg('Chamada salva com sucesso!', 'success');
   } catch (e) {
     mostrarMsg('Erro: ' + e.message, 'danger');
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = false;
   }
 }
 
+function imprimirLista() { window.print(); }
+
 // ── Helpers ──
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function mostrarMsg(texto, tipo) {
-  const m = document.getElementById('msg');
-  m.textContent = texto;
-  m.className = 'alert alert-' + tipo;
-  m.style.display = 'block';
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function mostrarMsg(txt, tipo) {
+  const el = document.getElementById('msg');
+  el.textContent = txt;
+  el.className = 'alert alert-' + tipo;
+  el.style.display = 'block';
+  if (tipo !== 'danger') setTimeout(() => { el.style.display = 'none'; }, 5000);
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 function esconderMsg() { document.getElementById('msg').style.display = 'none'; }
 </script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
 </body>
 </html>

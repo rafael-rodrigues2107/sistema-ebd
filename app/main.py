@@ -54,6 +54,7 @@ app.include_router(usuarios_router)
 static_dir = Path(__file__).parent / "static"
 static_dir.mkdir(exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+app.mount("/icons", StaticFiles(directory=str(static_dir / "icons")), name="icons")
 
 
 @app.post("/api/seed", tags=["Seed"])
@@ -86,3 +87,18 @@ async def dashboard():
 @app.get("/login.html")
 async def login_page():
     return FileResponse(static_dir / "login.html")
+
+
+@app.get("/aluno.html")
+async def aluno_page():
+    return FileResponse(static_dir / "aluno.html")
+
+
+@app.get("/manifest.json")
+async def manifest():
+    return FileResponse(static_dir / "manifest.json", media_type="application/manifest+json")
+
+
+@app.get("/sw.js")
+async def service_worker():
+    return FileResponse(static_dir / "sw.js", media_type="application/javascript")

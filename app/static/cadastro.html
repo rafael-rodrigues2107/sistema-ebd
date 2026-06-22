@@ -3,344 +3,413 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cadastros EBD</title>
+<title>Cadastros — Sistema EBD</title>
+<meta name="theme-color" content="#4f46e5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EBD">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f4f5f7;
-    --card: #fff;
-    --border: #dde1e6;
-    --text: #212529;
-    --muted: #6c757d;
-    --primary: #0d6efd;
-    --success: #198754;
-    --danger: #dc3545;
-    --radius: 8px;
+    --primary: #4f46e5; --primary-dark: #4338ca; --primary-light: #ede9fe; --primary-muted: #a5b4fc;
+    --success: #10b981; --success-light: #d1fae5; --success-dark: #059669;
+    --danger: #ef4444; --danger-light: #fee2e2;
+    --warning: #f59e0b; --warning-light: #fef3c7;
+    --purple: #7c3aed; --purple-light: #f5f3ff;
+    --bg: #f1f5f9; --surface: #ffffff; --border: #e2e8f0;
+    --text: #0f172a; --text-muted: #64748b; --text-subtle: #94a3b8;
+    --radius: 14px; --radius-sm: 8px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.05), 0 1px 2px rgba(0,0,0,.04);
+    --shadow: 0 4px 12px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.04);
+    --nav-h: 60px;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 24px; }
-  .container { max-width: 1200px; margin: 0 auto; }
-  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-  h1 { font-size: 1.5rem; color: var(--primary); }
-  h2 { font-size: 1.1rem; margin-bottom: 14px; }
-  h3 { font-size: 1rem; margin-bottom: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
-  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
-  @media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr 1fr; } }
-  @media (max-width: 600px) { .grid-3 { grid-template-columns: 1fr; } }
-  .field { margin-bottom: 12px; }
-  .field label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 4px; color: var(--muted); }
-  .field input[type="text"],
-  .field input[type="number"],
-  .field select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; }
-  .field input:focus, .field select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13,110,253,.15); }
-  .field-check { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-  .field-check input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
-  .field-check label { font-size: .9rem; font-weight: 600; color: var(--muted); margin: 0; cursor: pointer; }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: left; font-size: .92rem; }
-  th { background: #f8f9fa; font-weight: 600; color: var(--muted); font-size: .8rem; text-transform: uppercase; }
-  tbody tr:hover { background: #f8f9fa; }
-  .btn { padding: 9px 22px; border: none; border-radius: 6px; font-size: .95rem; cursor: pointer; font-weight: 600; transition: background .15s; }
-  .btn-primary { background: var(--primary); color: #fff; }
-  .btn-primary:hover { background: #0b5ed7; }
-  .btn-sm { padding: 4px 10px; font-size: .8rem; }
-  .alert { padding: 12px 16px; border-radius: 6px; margin-bottom: 14px; font-size: .9rem; display: none; }
-  .alert-info    { background: #cff4fc; border: 1px solid #b6effb; }
-  .alert-success { background: #d1e7dd; border: 1px solid #badbcc; }
-  .alert-danger  { background: #f8d7da; border: 1px solid #f5c2c7; }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .78rem; font-weight: 600; }
-  .badge-active   { background: #d1e7dd; color: #0f5132; }
-  .badge-inactive { background: #f8d7da; color: #842029; }
-  .nav-link { font-size: .85rem; color: var(--muted); text-decoration: none; border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; }
-  .nav-link:hover { background: #f0f0f0; }
-  .empty-row td { text-align: center; color: var(--muted); font-style: italic; padding: 20px; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); padding-top: var(--nav-h); }
 
-  /* Gestão de Acessos */
-  .auth-section { background: #f8f4ff; border: 1px solid #d8b4fe; border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
-  .auth-section h2 { color: #6d28d9; margin-bottom: 16px; }
-  .auth-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  @media (max-width: 800px) { .auth-grid { grid-template-columns: 1fr; } }
-  .auth-grid > .card { margin-bottom: 0; }
-  .role-badge { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: .75rem; font-weight: 700; }
-  .role-admin { background: #ede9fe; color: #5b21b6; }
-  .role-prof  { background: #d1fae5; color: #065f46; }
-  .btn-xs { padding: 3px 8px; font-size: .78rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
-  .btn-edit { background: #dbeafe; color: #1d4ed8; }
-  .btn-del  { background: #fee2e2; color: #dc2626; }
-  .btn-edit:hover { background: #bfdbfe; }
-  .btn-del:hover  { background: #fecaca; }
-  .admin-bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #ede9fe; border-radius: 6px; margin-bottom: 16px; font-size: .9rem; }
-  .admin-bar strong { color: #5b21b6; }
-  .btn-logout { padding: 4px 12px; font-size: .8rem; border: 1px solid #c4b5fd; border-radius: 6px; background: transparent; color: #6d28d9; cursor: pointer; }
-  .btn-logout:hover { background: #c4b5fd; }
-  #loginBanner { display: none; padding: 14px 16px; background: #ede9fe; border: 1px solid #c4b5fd; border-radius: var(--radius); margin-bottom: 20px; font-size: .9rem; color: #5b21b6; }
-  #loginBanner a { color: #5b21b6; font-weight: 700; }
+  /* Navbar */
+  .navbar { position: fixed; top: 0; left: 0; right: 0; height: var(--nav-h); background: rgba(255,255,255,.95); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); z-index: 100; display: flex; align-items: center; padding: 0 24px; gap: 16px; }
+  .nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1rem; color: var(--text); text-decoration: none; letter-spacing: -.02em; flex-shrink: 0; }
+  .nav-logo { width: 34px; height: 34px; background: var(--primary-light); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .nav-links { display: flex; gap: 2px; flex: 1; }
+  .nav-link { padding: 6px 12px; border-radius: 6px; font-size: .82rem; font-weight: 600; color: var(--text-muted); text-decoration: none; white-space: nowrap; transition: .15s; }
+  .nav-link:hover { background: var(--bg); color: var(--text); }
+  .nav-link.active { background: var(--primary-light); color: var(--primary); }
+  .nav-user { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .nav-name { font-size: .82rem; font-weight: 600; color: var(--text-muted); display: none; }
+  @media (min-width: 600px) { .nav-name { display: block; } }
+  .btn-logout { padding: 5px 12px; font-size: .8rem; font-weight: 600; font-family: inherit; color: var(--text-muted); background: transparent; border: 1.5px solid var(--border); border-radius: 6px; cursor: pointer; transition: .15s; }
+  .btn-logout:hover { background: var(--bg); color: var(--text); }
+
+  /* Layout */
+  .container { max-width: 900px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  /* Page header */
+  .page-header { margin-bottom: 24px; }
+  .page-header h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: -.03em; color: var(--text); line-height: 1; }
+  .page-header p { font-size: .875rem; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
+
+  /* Tabs */
+  .tabs-bar { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 5px; margin-bottom: 24px; box-shadow: var(--shadow-sm); overflow-x: auto; }
+  .tab-btn { display: flex; align-items: center; gap: 7px; padding: 9px 16px; border: none; border-radius: 9px; font-size: .85rem; font-weight: 600; font-family: inherit; color: var(--text-muted); background: transparent; cursor: pointer; transition: .15s; white-space: nowrap; flex-shrink: 0; }
+  .tab-btn:hover { background: var(--bg); color: var(--text); }
+  .tab-btn.active { background: var(--primary); color: #fff; box-shadow: 0 2px 8px rgba(79,70,229,.3); }
+  .tab-btn .tab-icon { font-size: 1rem; }
+  .tab-count { background: rgba(255,255,255,.25); color: inherit; padding: 1px 7px; border-radius: 10px; font-size: .72rem; font-weight: 800; }
+  .tab-btn:not(.active) .tab-count { background: var(--bg); color: var(--text-muted); }
+
+  /* Tab panels */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Card */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow-sm); }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .card-title { font-size: 1rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .card-subtitle { font-size: .8rem; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+
+  /* Fields */
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: .75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    font-size: .9rem; font-family: inherit; color: var(--text); background: var(--surface);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .field select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; cursor: pointer; }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+  .field input::placeholder { color: var(--text-subtle); }
+  .field-check { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; cursor: pointer; }
+  .field-check input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
+  .field-check label { font-size: .875rem; font-weight: 600; color: var(--text-muted); cursor: pointer; }
+  .fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 580px) { .fields-row { grid-template-columns: 1fr; } }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 20px; border: none; border-radius: var(--radius-sm); font-size: .875rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: all .15s; }
+  .btn:active { transform: scale(.98); }
+  .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 1px 4px rgba(79,70,229,.25); }
+  .btn-primary:hover:not(:disabled) { background: var(--primary-dark); box-shadow: 0 3px 10px rgba(79,70,229,.35); }
+  .btn-primary:disabled { background: var(--primary-muted); cursor: not-allowed; box-shadow: none; transform: none; }
+  .btn-ghost { background: var(--bg); color: var(--text-muted); border: 1.5px solid var(--border); }
+  .btn-ghost:hover { background: var(--border); color: var(--text); }
+  .btn-danger { background: var(--danger-light); color: #991b1b; border: 1.5px solid #fca5a5; }
+  .btn-danger:hover { background: #fecaca; }
+  .btn-sm { padding: 6px 14px; font-size: .8rem; }
+  .btns-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+
+  /* Spinner in btn */
+  .btn-spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; display: none; }
+  .btn.loading .btn-spinner { display: block; }
+  .btn.loading .btn-text { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Alert */
+  .alert { padding: 11px 16px; border-radius: var(--radius-sm); font-size: .875rem; font-weight: 500; margin-bottom: 16px; display: none; border: 1px solid; }
+  .alert-info    { background: #e0f2fe; border-color: #bae6fd; color: #0369a1; }
+  .alert-success { background: var(--success-light); border-color: #6ee7b7; color: #065f46; }
+  .alert-danger  { background: var(--danger-light); border-color: #fca5a5; color: #b91c1c; }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; margin: 0 -24px -24px; border-top: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 10px 16px; font-size: .7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; background: var(--bg); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 11px 16px; border-bottom: 1px solid var(--border); font-size: .875rem; vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #fafbfc; }
+  .empty-row td { text-align: center; color: var(--text-subtle); font-style: italic; padding: 28px; font-size: .85rem; }
+
+  /* Badge */
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: .7rem; font-weight: 700; letter-spacing: .02em; }
+  .badge-on  { background: var(--success-light); color: #065f46; }
+  .badge-off { background: var(--danger-light); color: #991b1b; }
+  .badge-ativo  { background: var(--primary-light); color: var(--primary-dark); }
+  .role-admin { background: var(--primary-light); color: var(--primary-dark); }
+  .role-prof  { background: var(--success-light); color: #065f46; }
+
+  /* Row actions */
+  .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .action-btn { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border: none; border-radius: 5px; font-size: .72rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: .15s; }
+  .action-btn:hover { filter: brightness(.93); }
+  .action-edit  { background: #dbeafe; color: #1d4ed8; }
+  .action-del   { background: var(--danger-light); color: #991b1b; }
+  .action-view  { background: var(--success-light); color: #065f46; }
+
+  /* Section divider */
+  .section-divider { display: flex; align-items: center; gap: 12px; margin: 28px 0 20px; }
+  .section-divider span { font-size: .8rem; font-weight: 700; color: var(--text-muted); white-space: nowrap; text-transform: uppercase; letter-spacing: .06em; }
+  .section-divider::before, .section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* Search */
+  .search-wrap { position: relative; margin-bottom: 0; }
+  .search-wrap input { padding-left: 36px; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-subtle); font-size: .9rem; pointer-events: none; }
+
+  /* Empty state */
+  .empty-state { text-align: center; padding: 48px 20px; }
+  .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+  .empty-state h3 { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .empty-state p { font-size: .85rem; color: var(--text-muted); }
+
+  /* Form + list layout */
+  .form-list-grid { display: grid; grid-template-columns: 360px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 780px) { .form-list-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
+
+<nav class="navbar">
+  <a class="nav-brand" href="/"><div class="nav-logo">⛪</div><span>EBD</span></a>
+  <div class="nav-links">
+    <a href="/" class="nav-link">Chamada</a>
+    <a href="/fechamento.html" class="nav-link">Fechamento</a>
+    <a href="/dashboard.html" class="nav-link">Dashboard</a>
+    <a href="/cadastro.html" class="nav-link active">Cadastros</a>
+  </div>
+  <div class="nav-user">
+    <span class="nav-name" id="navNome"></span>
+    <button class="btn-logout" onclick="fazerLogout()">Sair</button>
+  </div>
+</nav>
+
 <div class="container">
 
-  <div class="topbar">
-    <h1>⚙️ Cadastros — EBD</h1>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <span id="topbarUser" style="display:none;font-size:.82rem;color:var(--muted);"></span>
-      <a href="/dashboard.html" class="nav-link">📈 Dashboard</a>
-      <a href="/fechamento.html" class="nav-link">📊 Fechamento</a>
-      <a href="/" class="nav-link">📋 Chamada</a>
-      <a href="/login.html" id="loginLink" class="nav-link" style="display:none;">🔐 Login</a>
-    </div>
+  <div class="page-header">
+    <h1>Cadastros</h1>
+    <p>Gerencie turmas, alunos, trimestres e acessos do sistema</p>
   </div>
 
-  <!-- Banner para não logados -->
-  <div id="loginBanner">
-    🔐 <a href="/login.html">Faça login como administrador</a> para acessar a Gestão de Acessos.
+  <!-- Tabs -->
+  <div class="tabs-bar" role="tablist">
+    <button class="tab-btn active" onclick="abrirAba('turmas')" id="tab-turmas" role="tab">
+      <span class="tab-icon">📚</span> Turmas
+      <span class="tab-count" id="cnt-turmas">—</span>
+    </button>
+    <button class="tab-btn" onclick="abrirAba('alunos')" id="tab-alunos" role="tab">
+      <span class="tab-icon">🎓</span> Alunos
+      <span class="tab-count" id="cnt-alunos">—</span>
+    </button>
+    <button class="tab-btn" onclick="abrirAba('trimestres')" id="tab-trimestres" role="tab">
+      <span class="tab-icon">📅</span> Trimestres
+      <span class="tab-count" id="cnt-trimestres">—</span>
+    </button>
+    <button class="tab-btn" onclick="abrirAba('matriculas')" id="tab-matriculas" role="tab">
+      <span class="tab-icon">📋</span> Matrículas
+      <span class="tab-count" id="cnt-matriculas">—</span>
+    </button>
+    <button class="tab-btn" onclick="abrirAba('usuarios')" id="tab-usuarios" role="tab">
+      <span class="tab-icon">🔐</span> Usuários
+      <span class="tab-count" id="cnt-usuarios">—</span>
+    </button>
   </div>
 
-  <div id="msg-turma"     class="alert"></div>
-  <div id="msg-aluno"     class="alert"></div>
-  <div id="msg-trimestre" class="alert"></div>
-
-  <!-- ── Formulários: 3 colunas ── -->
-  <div class="grid-3">
-
-    <!-- Coluna 1: Nova Turma -->
-    <div class="card">
-      <h2>➕ Nova Turma</h2>
-      <div class="field">
-        <label for="turmaNome">Nome da Turma *</label>
-        <input type="text" id="turmaNome" placeholder="Ex: Adultos, Jovens…" maxlength="120">
-      </div>
-      <div class="field">
-        <label for="turmaFaixa">Faixa Etária *</label>
-        <select id="turmaFaixa">
-          <option value="">Selecione…</option>
-          <option value="Adultos">Adultos</option>
-          <option value="Jovens">Jovens</option>
-          <option value="Adolescentes">Adolescentes</option>
-          <option value="Juniores">Juniores</option>
-          <option value="Primários">Primários</option>
-          <option value="Jardim de Infância">Jardim de Infância</option>
-          <option value="Maternal">Maternal</option>
-          <option value="Outro">Outro</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="turmaDescricao">Descrição <span style="font-weight:400">(opcional)</span></label>
-        <input type="text" id="turmaDescricao" placeholder="Ex: Culto de Missões…" maxlength="300">
-      </div>
-      <button class="btn btn-primary" onclick="salvarTurma()">Salvar Turma</button>
-    </div>
-
-    <!-- Coluna 2: Novo Aluno / Editar Aluno -->
-    <div class="card">
-      <h2 id="formAlunoTitulo">➕ Novo Aluno</h2>
-      <input type="hidden" id="alunoEditId">
-
-      <div class="field">
-        <label for="alunoNome">Nome Completo *</label>
-        <input type="text" id="alunoNome" placeholder="Nome do aluno" maxlength="200">
-      </div>
-      <div class="field">
-        <label for="alunoTelefone">Telefone <span style="font-weight:400">(opcional)</span></label>
-        <input type="text" id="alunoTelefone" placeholder="(00) 00000-0000" maxlength="30">
-      </div>
-
-      <!-- Turma: visível em criação e edição (label muda conforme o modo) -->
-      <div class="field" id="campoTurmaAluno">
-        <label id="lblTurmaAluno" for="alunoTurmaSelect">Matricular na Turma</label>
-        <select id="alunoTurmaSelect">
-          <option value="">Selecione (opcional)…</option>
-        </select>
-      </div>
-      <!-- Trimestre: visível apenas no modo criação -->
-      <div class="field" id="campoTrimestreAluno">
-        <label for="alunoTrimestreSelect">Trimestre da Matrícula</label>
-        <select id="alunoTrimestreSelect">
-          <option value="">Carregando…</option>
-        </select>
-      </div>
-
-      <!-- Status: visível apenas no modo edição -->
-      <div class="field-check" id="campoAlunoAtivo" style="display:none;">
-        <input type="checkbox" id="alunoAtivo" checked>
-        <label for="alunoAtivo">Aluno Ativo</label>
-      </div>
-
-      <div style="display:flex;gap:8px;margin-top:4px;">
-        <button class="btn btn-primary" id="btnSalvarAluno" onclick="salvarAluno()">Salvar Aluno</button>
-        <button class="btn" id="btnCancelarAluno" style="display:none;background:#e9ecef;color:var(--text);" onclick="cancelarEdicaoAluno()">Cancelar</button>
-      </div>
-    </div>
-
-    <!-- Coluna 3: Novo Trimestre -->
-    <div class="card">
-      <h2>➕ Novo Trimestre</h2>
-      <div class="field">
-        <label for="trimestreAno">Ano *</label>
-        <input type="number" id="trimestreAno" min="2000" max="2100" placeholder="Ex: 2026">
-      </div>
-      <div class="field">
-        <label for="trimestreNumero">Trimestre *</label>
-        <select id="trimestreNumero">
-          <option value="">Selecione…</option>
-          <option value="1">1º Trimestre</option>
-          <option value="2">2º Trimestre</option>
-          <option value="3">3º Trimestre</option>
-          <option value="4">4º Trimestre</option>
-        </select>
-      </div>
-      <div class="field-check">
-        <input type="checkbox" id="trimestreAtivo" checked>
-        <label for="trimestreAtivo">Marcar como Ativo</label>
-      </div>
-      <button class="btn btn-primary" onclick="salvarTrimestre()">Salvar Trimestre</button>
-    </div>
-
-  </div>
-
-  <!-- ── Tabela de Turmas ── -->
-  <div class="card">
-    <h2>📚 Turmas Cadastradas</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Nome</th>
-          <th>Faixa Etária</th>
-          <th>Descrição</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody id="turmasTbody">
-        <tr class="empty-row"><td colspan="5">Carregando…</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- ── Tabela de Alunos Cadastrados (admin) ── -->
-  <div class="card" id="alunosCadastradosCard">
-    <h2>🎓 Alunos Cadastrados</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Nome</th>
-          <th>Telefone</th>
-          <th>Status</th>
-          <th style="text-align:center;">Ações</th>
-        </tr>
-      </thead>
-      <tbody id="alunosCadastradosTbody">
-        <tr class="empty-row"><td colspan="5">Carregando…</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- ── Tabela de Alunos Matriculados ── -->
-  <div class="card">
-    <h2>📋 Matrículas por Turma/Trimestre</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Aluno</th>
-          <th>Turma</th>
-          <th>Trimestre</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody id="matriculasTbody">
-        <tr class="empty-row"><td colspan="5">Carregando…</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- ── Tabela de Trimestres ── -->
-  <div class="card">
-    <h2>📅 Trimestres Cadastrados</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Ano</th>
-          <th>Trimestre</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody id="trimestresTbody">
-        <tr class="empty-row"><td colspan="4">Carregando…</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- ── Gestão de Acessos (apenas admin) ── -->
-  <div id="gestoAcessos" style="display:none;">
-    <div class="auth-section">
-      <h2>🔐 Gestão de Acessos</h2>
-
-      <div class="admin-bar">
-        Logado como: <strong id="adminNomeBar">—</strong>
-        <button class="btn-logout" onclick="logout()">Sair</button>
-      </div>
-
-      <div class="auth-grid">
-
-        <!-- Formulário criar/editar usuário -->
-        <div class="card">
-          <h3 id="formUsuarioTitulo" style="font-size:1rem;margin-bottom:14px;">➕ Novo Usuário</h3>
-          <input type="hidden" id="usuarioEditId">
-          <div id="msg-usuario" class="alert" style="display:none;"></div>
-
-          <div class="field">
-            <label for="uNome">Nome Completo *</label>
-            <input type="text" id="uNome" placeholder="Nome do usuário">
-          </div>
-          <div class="field">
-            <label for="uUsername">Username *</label>
-            <input type="text" id="uUsername" placeholder="Ex: prof.joao" autocomplete="off">
-          </div>
-          <div class="field">
-            <label for="uSenha">Senha *</label>
-            <input type="password" id="uSenha" placeholder="Mínimo 4 caracteres" autocomplete="new-password">
-          </div>
-          <div class="field">
-            <label for="uRole">Perfil *</label>
-            <select id="uRole" onchange="toggleTurmaField()">
-              <option value="professor">Professor</option>
-              <option value="admin">Administrador</option>
-            </select>
-          </div>
-          <div class="field" id="campoTurmaUsuario">
-            <label for="uTurma">Turma do Professor</label>
-            <select id="uTurma">
-              <option value="">Nenhuma</option>
-            </select>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:4px;">
-            <button class="btn btn-primary" onclick="salvarUsuario()">Salvar</button>
-            <button class="btn" id="btnCancelarUsuario" style="display:none;background:#e9ecef;color:var(--text);" onclick="cancelarEdicaoUsuario()">Cancelar</button>
+  <!-- ── ABA TURMAS ── -->
+  <div class="tab-panel active" id="panel-turmas">
+    <div id="msg-turma" class="alert"></div>
+    <div class="form-list-grid">
+      <!-- Formulário -->
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header">
+          <div>
+            <div class="card-title" id="formTurmaTitulo">Nova Turma</div>
+            <div class="card-subtitle">Preencha os dados da turma</div>
           </div>
         </div>
-
-        <!-- Tabela de usuários -->
-        <div class="card">
-          <h3 style="font-size:1rem;margin-bottom:14px;">👥 Usuários do Sistema</h3>
+        <input type="hidden" id="turmaEditId">
+        <div class="field"><label>Nome *</label><input type="text" id="turmaNome" placeholder="Ex: Adultos, Jovens…" maxlength="120"></div>
+        <div class="field">
+          <label>Faixa Etária *</label>
+          <select id="turmaFaixa">
+            <option value="">Selecione…</option>
+            <option>Adultos</option><option>Jovens</option><option>Adolescentes</option>
+            <option>Juniores</option><option>Primários</option><option>Jardim de Infância</option>
+            <option>Maternal</option><option>Outro</option>
+          </select>
+        </div>
+        <div class="field"><label>Descrição <span style="font-weight:400;text-transform:none">(opcional)</span></label><input type="text" id="turmaDescricao" placeholder="Ex: Culto de Missões…" maxlength="300"></div>
+        <div class="btns-row">
+          <button class="btn btn-primary" id="btnSalvarTurma" onclick="salvarTurma()">
+            <div class="btn-spinner"></div>
+            <span class="btn-text" id="btnSalvarTurmaText">Salvar Turma</span>
+          </button>
+          <button class="btn btn-ghost btn-sm" id="btnCancelarTurma" style="display:none;" onclick="cancelarEdicaoTurma()">Cancelar</button>
+        </div>
+      </div>
+      <!-- Lista -->
+      <div class="card" style="margin-bottom:0;padding-bottom:0;overflow:hidden;">
+        <div class="card-header">
+          <div class="card-title">Turmas Cadastradas</div>
+        </div>
+        <div class="table-wrap">
           <table>
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>Username</th>
-                <th>Perfil</th>
-                <th>Turma</th>
-                <th style="text-align:center;">Ações</th>
-              </tr>
-            </thead>
-            <tbody id="usuariosTbody">
-              <tr class="empty-row"><td colspan="5">Carregando…</td></tr>
-            </tbody>
+            <thead><tr><th>Nome</th><th>Faixa Etária</th><th>Status</th><th style="text-align:right">Ações</th></tr></thead>
+            <tbody id="turmasTbody"><tr class="empty-row"><td colspan="4">Carregando…</td></tr></tbody>
           </table>
         </div>
+      </div>
+    </div>
+  </div>
 
+  <!-- ── ABA ALUNOS ── -->
+  <div class="tab-panel" id="panel-alunos">
+    <div id="msg-aluno" class="alert"></div>
+    <div class="form-list-grid">
+      <!-- Formulário -->
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header">
+          <div>
+            <div class="card-title" id="formAlunoTitulo">Novo Aluno</div>
+            <div class="card-subtitle">Preencha os dados do aluno</div>
+          </div>
+        </div>
+        <input type="hidden" id="alunoEditId">
+        <div class="field"><label>Nome Completo *</label><input type="text" id="alunoNome" placeholder="Nome do aluno" maxlength="200"></div>
+        <div class="field"><label>Telefone <span style="font-weight:400;text-transform:none">(opcional)</span></label><input type="text" id="alunoTelefone" placeholder="(00) 00000-0000" maxlength="30"></div>
+        <div class="field" id="campoTurmaAluno">
+          <label id="lblTurmaAluno">Matricular na Turma</label>
+          <select id="alunoTurmaSelect"><option value="">Selecione (opcional)…</option></select>
+        </div>
+        <div class="field" id="campoTrimestreAluno">
+          <label>Trimestre da Matrícula</label>
+          <select id="alunoTrimestreSelect"><option value="">Carregando…</option></select>
+        </div>
+        <div class="field-check" id="campoAlunoAtivo" style="display:none;">
+          <input type="checkbox" id="alunoAtivo" checked>
+          <label for="alunoAtivo">Aluno ativo</label>
+        </div>
+        <div class="btns-row">
+          <button class="btn btn-primary" id="btnSalvarAluno" onclick="salvarAluno()">
+            <div class="btn-spinner"></div>
+            <span class="btn-text" id="btnSalvarAlunoText">Salvar Aluno</span>
+          </button>
+          <button class="btn btn-ghost btn-sm" id="btnCancelarAluno" style="display:none;" onclick="cancelarEdicaoAluno()">Cancelar</button>
+        </div>
+      </div>
+      <!-- Lista -->
+      <div class="card" style="margin-bottom:0;padding-bottom:0;overflow:hidden;">
+        <div class="card-header">
+          <div class="card-title">Alunos Cadastrados</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nome</th><th>Telefone</th><th>Status</th><th style="text-align:right">Ações</th></tr></thead>
+            <tbody id="alunosCadastradosTbody"><tr class="empty-row"><td colspan="4">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ABA TRIMESTRES ── -->
+  <div class="tab-panel" id="panel-trimestres">
+    <div id="msg-trimestre" class="alert"></div>
+    <div class="form-list-grid">
+      <!-- Formulário -->
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Novo Trimestre</div>
+            <div class="card-subtitle">Os domingos serão gerados automaticamente</div>
+          </div>
+        </div>
+        <div class="fields-row">
+          <div class="field"><label>Ano *</label><input type="number" id="trimestreAno" min="2000" max="2100" placeholder="2026"></div>
+          <div class="field">
+            <label>Trimestre *</label>
+            <select id="trimestreNumero">
+              <option value="">Selecione…</option>
+              <option value="1">1º Trimestre</option><option value="2">2º Trimestre</option>
+              <option value="3">3º Trimestre</option><option value="4">4º Trimestre</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-check"><input type="checkbox" id="trimestreAtivo" checked><label for="trimestreAtivo">Marcar como ativo</label></div>
+        <button class="btn btn-primary" id="btnSalvarTrimestre" onclick="salvarTrimestre()">
+          <div class="btn-spinner"></div>
+          <span class="btn-text">Salvar Trimestre</span>
+        </button>
+      </div>
+      <!-- Lista -->
+      <div class="card" style="margin-bottom:0;padding-bottom:0;overflow:hidden;">
+        <div class="card-header">
+          <div class="card-title">Trimestres Cadastrados</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Ano</th><th>Trimestre</th><th>Período</th><th>Status</th></tr></thead>
+            <tbody id="trimestresTbody"><tr class="empty-row"><td colspan="4">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ABA MATRÍCULAS ── -->
+  <div class="tab-panel" id="panel-matriculas">
+    <div class="card" style="padding-bottom:0;overflow:hidden;">
+      <div class="card-header">
+        <div class="card-title">Matrículas por Turma / Trimestre</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Aluno</th><th>Turma</th><th>Trimestre</th><th>Status</th></tr></thead>
+          <tbody id="matriculasTbody"><tr class="empty-row"><td colspan="4">Carregando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ABA USUÁRIOS ── -->
+  <div class="tab-panel" id="panel-usuarios">
+    <div id="msg-usuario" class="alert"></div>
+    <div class="form-list-grid">
+      <!-- Formulário -->
+      <div class="card" style="margin-bottom:0;background:var(--purple-light);border-color:#ddd6fe;">
+        <div class="card-header" style="border-color:#ddd6fe;">
+          <div>
+            <div class="card-title" id="formUsuarioTitulo" style="color:var(--purple);">Novo Usuário</div>
+            <div class="card-subtitle">Acesso ao Sistema EBD</div>
+          </div>
+        </div>
+        <input type="hidden" id="usuarioEditId">
+        <div class="field"><label>Nome Completo *</label><input type="text" id="uNome" placeholder="Nome do usuário"></div>
+        <div class="field"><label>Username *</label><input type="text" id="uUsername" placeholder="Ex: prof.joao" autocomplete="off"></div>
+        <div class="field"><label>Senha *</label><input type="password" id="uSenha" placeholder="Mínimo 4 caracteres" autocomplete="new-password"></div>
+        <div class="field">
+          <label>Perfil *</label>
+          <select id="uRole" onchange="toggleTurmaField()">
+            <option value="professor">Professor</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+        <div class="field" id="campoTurmaUsuario">
+          <label>Turma do Professor</label>
+          <select id="uTurma"><option value="">Nenhuma</option></select>
+        </div>
+        <div class="btns-row">
+          <button class="btn btn-primary" id="btnSalvarUsuario" onclick="salvarUsuario()">
+            <div class="btn-spinner"></div>
+            <span class="btn-text">Salvar</span>
+          </button>
+          <button class="btn btn-ghost btn-sm" id="btnCancelarUsuario" style="display:none;" onclick="cancelarEdicaoUsuario()">Cancelar</button>
+        </div>
+      </div>
+      <!-- Lista -->
+      <div class="card" style="margin-bottom:0;padding-bottom:0;overflow:hidden;">
+        <div class="card-header">
+          <div class="card-title">Usuários do Sistema</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nome</th><th>Username</th><th>Perfil</th><th>Turma</th><th style="text-align:right">Ações</th></tr></thead>
+            <tbody id="usuariosTbody"><tr class="empty-row"><td colspan="5">Carregando…</td></tr></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -348,280 +417,274 @@
 </div>
 
 <script>
-// ── Guarda de acesso: apenas admin ──
 (function () {
-  const token = localStorage.getItem('ebd_token');
-  const role  = localStorage.getItem('ebd_role');
-  if (!token || role !== 'admin') {
-    localStorage.clear();
-    if (role && role !== 'admin') alert('Acesso negado. Esta área é exclusiva para administradores.');
-    window.location.replace('/login.html');
-  }
+  const role = localStorage.getItem('ebd_role');
+  if (!role || role !== 'admin') { localStorage.clear(); window.location.replace('/login.html'); }
 })();
 
-// ── Estado ──
-let turmasCache = [];
-let trimestresCache = [];
-let matriculasCache = [];
+document.getElementById('navNome').textContent = localStorage.getItem('ebd_nome')
+  ? `Olá, ${localStorage.getItem('ebd_nome').split(' ')[0]}` : '';
 
-// ── Inicialização ──
+function fazerLogout() {
+  fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).finally(() => {
+    localStorage.clear(); window.location.replace('/login.html');
+  });
+}
+
+// ── Abas ──
+function abrirAba(aba) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + aba).classList.add('active');
+  document.getElementById('panel-' + aba).classList.add('active');
+  localStorage.setItem('ebd_cadastro_aba', aba);
+}
+
+// Restaura aba salva
+const abaInicial = localStorage.getItem('ebd_cadastro_aba') || 'turmas';
+abrirAba(abaInicial);
+
+let turmasCache = [], trimestresCache = [], matriculasCache = [];
+
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('trimestreAno').value = new Date().getFullYear();
   carregarTurmas();
   carregarTrimestres();
   carregarMatriculas();
   carregarAlunosCadastrados();
-  verificarAuth();
+  popularSelectTurmasUsuario();
+  carregarUsuarios();
 });
 
-// ═══════════════════════════════════════════════════════════════
-// TURMAS
-// ═══════════════════════════════════════════════════════════════
-
+// ── TURMAS ──
 async function carregarTurmas() {
   try {
-    const resp = await fetch('/api/turmas/');
+    const resp = await fetch('/api/turmas/', { credentials: 'include' });
     turmasCache = await resp.json();
     renderizarTurmas(turmasCache);
     popularSelectTurmas(turmasCache);
     popularSelectTurmasUsuario();
+    document.getElementById('cnt-turmas').textContent = turmasCache.length;
   } catch {
-    document.getElementById('turmasTbody').innerHTML =
-      '<tr class="empty-row"><td colspan="5">Erro ao carregar turmas.</td></tr>';
+    document.getElementById('turmasTbody').innerHTML = '<tr class="empty-row"><td colspan="4">Erro ao carregar.</td></tr>';
   }
 }
 
 function renderizarTurmas(turmas) {
   const tbody = document.getElementById('turmasTbody');
   if (!turmas.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Nenhuma turma cadastrada ainda.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhuma turma cadastrada.</td></tr>';
     return;
   }
-  tbody.innerHTML = turmas.map(t => `
-    <tr>
-      <td>${t.id}</td>
-      <td><strong>${esc(t.nome)}</strong></td>
-      <td>${esc(t.faixa_etaria)}</td>
-      <td style="color:var(--muted)">${esc(t.descricao || '—')}</td>
-      <td><span class="badge ${t.ativo ? 'badge-active' : 'badge-inactive'}">${t.ativo ? 'Ativo' : 'Inativo'}</span></td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = turmas.map(t => `<tr>
+    <td><strong>${esc(t.nome)}</strong><div style="font-size:.75rem;color:var(--text-muted);margin-top:1px">${esc(t.descricao||'')}</div></td>
+    <td style="color:var(--text-muted)">${esc(t.faixa_etaria)}</td>
+    <td><span class="badge ${t.ativo ? 'badge-on' : 'badge-off'}">${t.ativo ? 'Ativa' : 'Inativa'}</span></td>
+    <td><div class="row-actions">
+      <button class="action-btn action-edit" onclick="editarTurma(${t.id},'${esc(t.nome)}','${esc(t.faixa_etaria)}','${esc(t.descricao||'')}')">✏️ Editar</button>
+    </div></td>
+  </tr>`).join('');
 }
 
 function popularSelectTurmas(turmas) {
   const sel = document.getElementById('alunoTurmaSelect');
   sel.innerHTML = '<option value="">Selecione (opcional)…</option>';
-  turmas.forEach(t => {
-    sel.innerHTML += `<option value="${t.id}">${esc(t.nome)} (${esc(t.faixa_etaria)})</option>`;
-  });
+  turmas.forEach(t => { sel.innerHTML += `<option value="${t.id}">${esc(t.nome)}</option>`; });
+}
+
+function editarTurma(id, nome, faixa, descricao) {
+  document.getElementById('turmaEditId').value = id;
+  document.getElementById('turmaNome').value = nome;
+  document.getElementById('turmaFaixa').value = faixa;
+  document.getElementById('turmaDescricao').value = descricao;
+  document.getElementById('formTurmaTitulo').textContent = 'Editar Turma';
+  document.getElementById('btnSalvarTurmaText').textContent = 'Atualizar';
+  document.getElementById('btnCancelarTurma').style.display = '';
+  abrirAba('turmas');
+  document.getElementById('turmaNome').focus();
+}
+
+function cancelarEdicaoTurma() {
+  document.getElementById('turmaEditId').value = '';
+  document.getElementById('turmaNome').value = '';
+  document.getElementById('turmaFaixa').value = '';
+  document.getElementById('turmaDescricao').value = '';
+  document.getElementById('formTurmaTitulo').textContent = 'Nova Turma';
+  document.getElementById('btnSalvarTurmaText').textContent = 'Salvar Turma';
+  document.getElementById('btnCancelarTurma').style.display = 'none';
 }
 
 async function salvarTurma() {
+  const editId = document.getElementById('turmaEditId').value;
   const nome = document.getElementById('turmaNome').value.trim();
   const faixa = document.getElementById('turmaFaixa').value;
   const descricao = document.getElementById('turmaDescricao').value.trim() || null;
-
-  if (!nome || !faixa) {
-    mostrarMsg('turma', 'Preencha Nome e Faixa Etária.', 'info');
-    return;
-  }
-
+  if (!nome || !faixa) { mostrarMsg('turma', 'Preencha Nome e Faixa Etária.', 'info'); return; }
+  setBtnLoading('btnSalvarTurma', true);
   try {
-    const resp = await fetch('/api/turmas/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome, faixa_etaria: faixa, descricao }),
-    });
-    if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.detail || 'Erro ao salvar');
-    }
-    mostrarMsg('turma', '✅ Turma cadastrada com sucesso!', 'success');
-    document.getElementById('turmaNome').value = '';
-    document.getElementById('turmaFaixa').value = '';
-    document.getElementById('turmaDescricao').value = '';
+    const url  = editId ? `/api/turmas/${editId}` : '/api/turmas/';
+    const meth = editId ? 'PUT' : 'POST';
+    const resp = await fetch(url, { method: meth, headers: {'Content-Type':'application/json'}, credentials: 'include', body: JSON.stringify({nome, faixa_etaria: faixa, descricao}) });
+    if (!resp.ok) throw new Error((await resp.json()).detail || 'Erro');
+    mostrarMsg('turma', `Turma ${editId ? 'atualizada' : 'cadastrada'} com sucesso!`, 'success');
+    cancelarEdicaoTurma();
     await carregarTurmas();
-  } catch (e) {
-    mostrarMsg('turma', 'Erro: ' + e.message, 'danger');
-  }
+  } catch (e) { mostrarMsg('turma', 'Erro: ' + e.message, 'danger'); }
+  finally { setBtnLoading('btnSalvarTurma', false); }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// TRIMESTRES
-// ═══════════════════════════════════════════════════════════════
-
+// ── TRIMESTRES ──
 async function carregarTrimestres() {
   const sel = document.getElementById('alunoTrimestreSelect');
   try {
-    const resp = await fetch('/api/trimestres/');
+    const resp = await fetch('/api/trimestres/', { credentials: 'include' });
     trimestresCache = await resp.json();
-
     sel.innerHTML = '<option value="">Sem matrícula</option>';
-    trimestresCache.forEach(t => {
-      sel.innerHTML += `<option value="${t.id}">${t.ano} — ${t.numero}º Trim.</option>`;
-    });
-
-    // Pré-seleciona o trimestre ativo
-    const ativoResp = await fetch('/api/trimestres/ativo').catch(() => null);
-    if (ativoResp && ativoResp.ok) {
-      const ativo = await ativoResp.json();
-      sel.value = ativo.id;
-    }
-
+    trimestresCache.forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.ano} — ${t.numero}º Trim.</option>`; });
+    const ar = await fetch('/api/trimestres/ativo', { credentials: 'include' }).catch(() => null);
+    if (ar && ar.ok) { const a = await ar.json(); sel.value = a.id; }
     renderizarTrimestres(trimestresCache);
-  } catch {
-    sel.innerHTML = '<option value="">Erro ao carregar</option>';
-    document.getElementById('trimestresTbody').innerHTML =
-      '<tr class="empty-row"><td colspan="4">Erro ao carregar trimestres.</td></tr>';
-  }
+    document.getElementById('cnt-trimestres').textContent = trimestresCache.length;
+  } catch { sel.innerHTML = '<option value="">Erro</option>'; }
 }
 
-function renderizarTrimestres(trimestres) {
+function renderizarTrimestres(lista) {
   const tbody = document.getElementById('trimestresTbody');
-  if (!trimestres.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhum trimestre cadastrado ainda.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = trimestres.map(t => `
-    <tr>
-      <td>${t.id}</td>
-      <td>${t.ano}</td>
-      <td>${t.numero}º Trimestre</td>
-      <td><span class="badge ${t.ativo ? 'badge-active' : 'badge-inactive'}">${t.ativo ? 'Ativo' : 'Inativo'}</span></td>
-    </tr>
-  `).join('');
+  if (!lista.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhum trimestre.</td></tr>'; return; }
+  tbody.innerHTML = lista.map(t => `<tr>
+    <td><strong>${t.ano}</strong></td>
+    <td>${t.numero}º Trimestre</td>
+    <td style="color:var(--text-muted);font-size:.82rem">${fmtData(t.data_inicio)} – ${fmtData(t.data_fim)}</td>
+    <td><span class="badge ${t.ativo ? 'badge-on' : 'badge-off'}">${t.ativo ? 'Ativo' : 'Inativo'}</span></td>
+  </tr>`).join('');
 }
 
 async function salvarTrimestre() {
   const ano = parseInt(document.getElementById('trimestreAno').value);
   const numero = parseInt(document.getElementById('trimestreNumero').value);
   const ativo = document.getElementById('trimestreAtivo').checked;
-
-  if (!ano || !numero) {
-    mostrarMsg('trimestre', 'Preencha Ano e Trimestre.', 'info');
-    return;
-  }
-
+  if (!ano || !numero) { mostrarMsg('trimestre', 'Preencha Ano e Trimestre.', 'info'); return; }
+  setBtnLoading('btnSalvarTrimestre', true);
   try {
-    const resp = await fetch('/api/trimestres/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ano, numero, ativo }),
-    });
-    if (!resp.ok) {
-      const err = await resp.json();
-      const detalhe = Array.isArray(err.detail)
-        ? err.detail.map(e => e.msg).join('; ')
-        : (err.detail || 'Erro ao salvar');
-      throw new Error(detalhe);
-    }
-    mostrarMsg('trimestre', '✅ Trimestre e domingos gerados com sucesso!', 'success');
+    const resp = await fetch('/api/trimestres/', { method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include', body: JSON.stringify({ano, numero, ativo}) });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(Array.isArray(e.detail) ? e.detail.map(x=>x.msg).join('; ') : (e.detail||'Erro')); }
+    mostrarMsg('trimestre', 'Trimestre e domingos gerados com sucesso!', 'success');
     document.getElementById('trimestreNumero').value = '';
     await carregarTrimestres();
-  } catch (e) {
-    console.error('[salvarTrimestre]', e);
-    mostrarMsg('trimestre', 'Erro: ' + e.message, 'danger');
-  }
+  } catch (e) { mostrarMsg('trimestre', 'Erro: ' + e.message, 'danger'); }
+  finally { setBtnLoading('btnSalvarTrimestre', false); }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ALUNOS / MATRÍCULAS
-// ═══════════════════════════════════════════════════════════════
-
+// ── ALUNOS ──
 async function carregarMatriculas() {
   try {
-    const resp = await fetch('/api/matriculas/');
-    const matriculas = await resp.json();
-    matriculasCache = matriculas;          // cacheia para lookup do turma_id no editar
-    renderizarMatriculas(matriculas);
+    const resp = await fetch('/api/matriculas/', { credentials: 'include' });
+    matriculasCache = await resp.json();
+    renderizarMatriculas(matriculasCache);
+    document.getElementById('cnt-matriculas').textContent = matriculasCache.length;
   } catch {
-    document.getElementById('matriculasTbody').innerHTML =
-      '<tr class="empty-row"><td colspan="5">Erro ao carregar matrículas.</td></tr>';
+    document.getElementById('matriculasTbody').innerHTML = '<tr class="empty-row"><td colspan="4">Erro ao carregar.</td></tr>';
   }
 }
 
-function renderizarMatriculas(matriculas) {
+function renderizarMatriculas(lista) {
   const tbody = document.getElementById('matriculasTbody');
-  if (!matriculas.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Nenhum aluno matriculado ainda.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = matriculas.map(m => `
-    <tr>
-      <td>${m.id}</td>
-      <td><strong>${esc(m.aluno_nome)}</strong></td>
-      <td>${esc(m.turma_nome)}</td>
-      <td>${formatarTrimestre(m.trimestre_id)}</td>
-      <td><span class="badge ${m.ativo ? 'badge-active' : 'badge-inactive'}">${m.ativo ? 'Ativo' : 'Inativo'}</span></td>
-    </tr>
-  `).join('');
+  if (!lista.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhuma matrícula.</td></tr>'; return; }
+  tbody.innerHTML = lista.map(m => `<tr>
+    <td><strong>${esc(m.aluno_nome)}</strong></td>
+    <td style="color:var(--text-muted)">${esc(m.turma_nome)}</td>
+    <td style="color:var(--text-muted)">${fmtTrimestre(m.trimestre_id)}</td>
+    <td><span class="badge ${m.ativo ? 'badge-on' : 'badge-off'}">${m.ativo ? 'Ativo' : 'Inativo'}</span></td>
+  </tr>`).join('');
 }
 
-function formatarTrimestre(trimestreId) {
-  const t = trimestresCache.find(x => x.id === trimestreId);
-  return t ? `${t.ano}/${t.numero}º` : `Trim. ${trimestreId}`;
+async function carregarAlunosCadastrados() {
+  const tbody = document.getElementById('alunosCadastradosTbody');
+  try {
+    const resp = await fetch('/api/alunos/?incluir_inativos=true', { credentials: 'include' });
+    if (!resp.ok) { tbody.innerHTML = '<tr class="empty-row"><td colspan="4">—</td></tr>'; return; }
+    const alunos = await resp.json();
+    document.getElementById('cnt-alunos').textContent = alunos.length;
+    if (!alunos.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhum aluno.</td></tr>'; return; }
+    tbody.innerHTML = alunos.map(a => {
+      const m = matriculasCache.filter(m => m.aluno_id === a.id && m.ativo).sort((x,y) => y.trimestre_id - x.trimestre_id)[0];
+      const turmaId = m ? m.turma_id : null;
+      const trimId  = m ? m.trimestre_id : (trimestresCache.find(t => t.ativo)?.id || '');
+      return `<tr>
+        <td><strong>${esc(a.nome)}</strong></td>
+        <td style="color:var(--text-muted);font-size:.85rem">${esc(a.telefone||'—')}</td>
+        <td><span class="badge ${a.ativo ? 'badge-on' : 'badge-off'}">${a.ativo ? 'Ativo' : 'Inativo'}</span></td>
+        <td><div class="row-actions">
+          <button class="action-btn action-view" onclick="verHistorico(${a.id},${trimId||'null'})">📊 Histórico</button>
+          <button class="action-btn action-edit" onclick="editarAluno(${a.id},'${esc(a.nome)}','${esc(a.telefone||'')}',${a.ativo},${turmaId??'null'})">✏️ Editar</button>
+          <button class="action-btn action-del" onclick="removerAluno(${a.id},'${esc(a.nome)}')">🗑️</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  } catch { tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Erro.</td></tr>'; }
+}
+
+function verHistorico(alunoId, trimId) {
+  const tId = trimId || (trimestresCache.find(t => t.ativo)?.id || trimestresCache[0]?.id);
+  if (!tId) { alert('Nenhum trimestre disponível.'); return; }
+  window.location.href = `/aluno.html?aluno_id=${alunoId}&trimestre_id=${tId}`;
 }
 
 async function salvarAluno() {
-  const editId  = document.getElementById('alunoEditId').value;
-  const nome    = document.getElementById('alunoNome').value.trim();
+  const editId = document.getElementById('alunoEditId').value;
+  const nome = document.getElementById('alunoNome').value.trim();
   const telefone = document.getElementById('alunoTelefone').value.trim() || null;
-
   if (!nome) { mostrarMsg('aluno', 'Informe o nome do aluno.', 'info'); return; }
-
-  // ── Modo edição: PUT ──
+  setBtnLoading('btnSalvarAluno', true);
   if (editId) {
-    const ativo     = document.getElementById('alunoAtivo').checked;
-    const turmaId   = parseInt(document.getElementById('alunoTurmaSelect').value) || null;
-    const payload   = { nome, telefone, ativo };
-    if (turmaId) payload.turma_id = turmaId;   // inclui apenas se selecionado
+    const ativo  = document.getElementById('alunoAtivo').checked;
+    const turmaId = parseInt(document.getElementById('alunoTurmaSelect').value) || null;
+    const payload = { nome, telefone, ativo };
+    if (turmaId) payload.turma_id = turmaId;
     try {
-      const resp = await fetch(`/api/alunos/${editId}`, {
-        method: 'PUT',
-        headers: authHeaders(),
-        body: JSON.stringify(payload),
-      });
-      if (!resp.ok) { const e = await resp.json(); throw new Error(e.detail || 'Erro ao atualizar'); }
-      mostrarMsg('aluno', '✅ Aluno atualizado com sucesso!', 'success');
+      const resp = await fetch(`/api/alunos/${editId}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, credentials: 'include', body: JSON.stringify(payload) });
+      if (!resp.ok) throw new Error((await resp.json()).detail || 'Erro');
+      mostrarMsg('aluno', 'Aluno atualizado com sucesso!', 'success');
       limparFormAluno();
       await Promise.all([carregarAlunosCadastrados(), carregarMatriculas()]);
     } catch (e) { mostrarMsg('aluno', 'Erro: ' + e.message, 'danger'); }
+    finally { setBtnLoading('btnSalvarAluno', false); }
     return;
   }
-
-  // ── Modo criação: POST + matrícula opcional ──
-  const turmaId     = parseInt(document.getElementById('alunoTurmaSelect').value) || null;
+  const turmaId    = parseInt(document.getElementById('alunoTurmaSelect').value) || null;
   const trimestreId = parseInt(document.getElementById('alunoTrimestreSelect').value) || null;
-
   try {
-    const alunoResp = await fetch('/api/alunos/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome, telefone }),
-    });
-    if (!alunoResp.ok) { const e = await alunoResp.json(); throw new Error(e.detail || 'Erro ao salvar aluno'); }
-    const aluno = await alunoResp.json();
-
+    const aR = await fetch('/api/alunos/', { method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include', body: JSON.stringify({nome, telefone}) });
+    if (!aR.ok) throw new Error((await aR.json()).detail || 'Erro');
+    const aluno = await aR.json();
     if (turmaId && trimestreId) {
-      const matResp = await fetch('/api/matriculas/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ aluno_id: aluno.id, turma_id: turmaId, trimestre_id: trimestreId }),
-      });
-      if (!matResp.ok) {
-        const e = await matResp.json();
-        mostrarMsg('aluno', `✅ Aluno criado, mas matrícula falhou: ${e.detail}`, 'info');
-        limparFormAluno();
-        await Promise.all([carregarAlunosCadastrados(), carregarMatriculas()]);
-        return;
-      }
+      const mR = await fetch('/api/matriculas/', { method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include', body: JSON.stringify({aluno_id: aluno.id, turma_id: turmaId, trimestre_id: trimestreId}) });
+      if (!mR.ok) { mostrarMsg('aluno', `Aluno criado, mas matrícula falhou.`, 'info'); limparFormAluno(); await Promise.all([carregarAlunosCadastrados(), carregarMatriculas()]); return; }
     }
-
-    mostrarMsg('aluno', '✅ Aluno cadastrado com sucesso!', 'success');
+    mostrarMsg('aluno', 'Aluno cadastrado com sucesso!', 'success');
     limparFormAluno();
     await Promise.all([carregarAlunosCadastrados(), carregarMatriculas()]);
   } catch (e) { mostrarMsg('aluno', 'Erro: ' + e.message, 'danger'); }
+  finally { setBtnLoading('btnSalvarAluno', false); }
 }
+
+function editarAluno(id, nome, telefone, ativo, turmaId) {
+  document.getElementById('alunoEditId').value = id;
+  document.getElementById('alunoNome').value = nome;
+  document.getElementById('alunoTelefone').value = telefone;
+  document.getElementById('alunoAtivo').checked = ativo;
+  document.getElementById('alunoTurmaSelect').value = turmaId ?? '';
+  document.getElementById('lblTurmaAluno').textContent = 'Alterar Turma (opcional)';
+  document.getElementById('campoTrimestreAluno').style.display = 'none';
+  document.getElementById('campoAlunoAtivo').style.display = '';
+  document.getElementById('formAlunoTitulo').textContent = 'Editar Aluno';
+  document.getElementById('btnSalvarAlunoText').textContent = 'Atualizar';
+  document.getElementById('btnCancelarAluno').style.display = '';
+  abrirAba('alunos');
+  document.getElementById('alunoNome').focus();
+}
+
+function cancelarEdicaoAluno() { limparFormAluno(); }
 
 function limparFormAluno() {
   document.getElementById('alunoEditId').value = '';
@@ -631,227 +694,73 @@ function limparFormAluno() {
   document.getElementById('lblTurmaAluno').textContent = 'Matricular na Turma';
   document.getElementById('campoTrimestreAluno').style.display = '';
   document.getElementById('campoAlunoAtivo').style.display = 'none';
-  document.getElementById('formAlunoTitulo').textContent = '➕ Novo Aluno';
-  document.getElementById('btnSalvarAluno').textContent = 'Salvar Aluno';
+  document.getElementById('formAlunoTitulo').textContent = 'Novo Aluno';
+  document.getElementById('btnSalvarAlunoText').textContent = 'Salvar Aluno';
   document.getElementById('btnCancelarAluno').style.display = 'none';
 }
 
-// ── Gestão de Alunos (editar / remover) ──
-
-async function carregarAlunosCadastrados() {
-  const tbody = document.getElementById('alunosCadastradosTbody');
-  try {
-    const resp = await fetch('/api/alunos/?incluir_inativos=true', { headers: authHeaders() });
-    if (!resp.ok) { tbody.innerHTML = '<tr class="empty-row"><td colspan="5">—</td></tr>'; return; }
-    const alunos = await resp.json();
-    if (!alunos.length) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Nenhum aluno cadastrado ainda.</td></tr>';
-      return;
-    }
-    tbody.innerHTML = alunos.map(a => `
-      <tr>
-        <td>${a.id}</td>
-        <td><strong>${esc(a.nome)}</strong></td>
-        <td style="color:var(--muted);font-size:.88rem;">${esc(a.telefone || '—')}</td>
-        <td><span class="badge ${a.ativo ? 'badge-active' : 'badge-inactive'}">${a.ativo ? 'Ativo' : 'Inativo'}</span></td>
-        <td style="text-align:center;">
-          <button class="btn-xs btn-edit" onclick="editarAluno(${a.id},'${esc(a.nome)}','${esc(a.telefone || '')}',${a.ativo},${(() => { const m = matriculasCache.filter(m => m.aluno_id === a.id && m.ativo).sort((x,y) => y.trimestre_id - x.trimestre_id)[0]; return m ? m.turma_id : 'null'; })()})">Editar</button>
-          <button class="btn-xs btn-del" onclick="removerAluno(${a.id},'${esc(a.nome)}')" style="margin-left:4px;">Remover</button>
-        </td>
-      </tr>`).join('');
-  } catch {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Erro ao carregar.</td></tr>';
-  }
-}
-
-function editarAluno(id, nome, telefone, ativo, turmaId) {
-  document.getElementById('alunoEditId').value = id;
-  document.getElementById('alunoNome').value = nome;
-  document.getElementById('alunoTelefone').value = telefone;
-  document.getElementById('alunoAtivo').checked = ativo;
-  // Pré-preenche e exibe o seletor de turma; oculta o trimestre (irrelevante na edição)
-  document.getElementById('alunoTurmaSelect').value = turmaId ?? '';
-  document.getElementById('lblTurmaAluno').textContent = 'Alterar Turma (opcional)';
-  document.getElementById('campoTrimestreAluno').style.display = 'none';
-  document.getElementById('campoAlunoAtivo').style.display = '';
-  document.getElementById('formAlunoTitulo').textContent = '📝 Editar Aluno';
-  document.getElementById('btnSalvarAluno').textContent = 'Atualizar Aluno';
-  document.getElementById('btnCancelarAluno').style.display = '';
-  document.getElementById('formAlunoTitulo').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function cancelarEdicaoAluno() {
-  limparFormAluno();
-}
-
 async function removerAluno(id, nome) {
-  if (!confirm(`Inativar "${nome}"?\n\nO aluno será removido das chamadas futuras, mas o histórico de presença será preservado.`)) return;
+  if (!confirm(`Inativar "${nome}"?\n\nO histórico de presença será preservado.`)) return;
   try {
-    const resp = await fetch(`/api/alunos/${id}`, { method: 'DELETE', headers: authHeaders() });
-    if (!resp.ok) { const e = await resp.json(); throw new Error(e.detail || 'Erro ao remover'); }
+    const resp = await fetch(`/api/alunos/${id}`, { method: 'DELETE', credentials: 'include' });
+    if (!resp.ok) throw new Error((await resp.json()).detail || 'Erro');
     await Promise.all([carregarAlunosCadastrados(), carregarMatriculas()]);
   } catch (e) { mostrarMsg('aluno', 'Erro: ' + e.message, 'danger'); }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════════
-
-function esc(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function mostrarMsg(prefixo, texto, tipo) {
-  const el = document.getElementById('msg-' + prefixo);
-  el.textContent = texto;
-  el.className = 'alert alert-' + tipo;
-  el.style.display = 'block';
-  setTimeout(() => { el.style.display = 'none'; }, 5000);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// AUTH
-// ═══════════════════════════════════════════════════════════════
-
-function getToken() { return localStorage.getItem('ebd_token'); }
-function getRole()  { return localStorage.getItem('ebd_role'); }
-function getNome()  { return localStorage.getItem('ebd_nome'); }
-
-function authHeaders() {
-  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` };
-}
-
-async function verificarAuth() {
-  const token = getToken();
-  if (!token) {
-    document.getElementById('loginLink').style.display = '';
-    document.getElementById('loginBanner').style.display = 'block';
-    return;
-  }
-  try {
-    const resp = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
-    if (!resp.ok) throw new Error();
-    const me = await resp.json();
-    // Atualiza nome armazenado
-    localStorage.setItem('ebd_nome', me.nome);
-    localStorage.setItem('ebd_role', me.role);
-
-    document.getElementById('topbarUser').textContent = `Olá, ${me.nome}`;
-    document.getElementById('topbarUser').style.display = '';
-
-    if (me.role === 'admin') {
-      document.getElementById('adminNomeBar').textContent = me.nome;
-      document.getElementById('gestoAcessos').style.display = 'block';
-      document.getElementById('loginBanner').style.display = 'none';
-      popularSelectTurmasUsuario();
-      carregarUsuarios();
-    }
-  } catch {
-    localStorage.removeItem('ebd_token');
-    localStorage.removeItem('ebd_role');
-    localStorage.removeItem('ebd_nome');
-    document.getElementById('loginLink').style.display = '';
-    document.getElementById('loginBanner').style.display = 'block';
-  }
-}
-
-function logout() {
-  localStorage.clear();
-  window.location.replace('/login.html');
-}
-
-// ═══════════════════════════════════════════════════════════════
-// GESTÃO DE USUÁRIOS
-// ═══════════════════════════════════════════════════════════════
-
+// ── USUÁRIOS ──
 function toggleTurmaField() {
-  const role = document.getElementById('uRole').value;
-  document.getElementById('campoTurmaUsuario').style.display = role === 'professor' ? '' : 'none';
+  document.getElementById('campoTurmaUsuario').style.display = document.getElementById('uRole').value === 'professor' ? '' : 'none';
 }
 
 function popularSelectTurmasUsuario() {
   const sel = document.getElementById('uTurma');
   sel.innerHTML = '<option value="">Nenhuma</option>';
-  turmasCache.forEach(t => {
-    sel.innerHTML += `<option value="${t.id}">${esc(t.nome)}</option>`;
-  });
+  turmasCache.forEach(t => { sel.innerHTML += `<option value="${t.id}">${esc(t.nome)}</option>`; });
 }
 
 async function carregarUsuarios() {
   const tbody = document.getElementById('usuariosTbody');
   try {
-    const resp = await fetch('/api/usuarios/', { headers: authHeaders() });
+    const resp = await fetch('/api/usuarios/', { credentials: 'include' });
     if (!resp.ok) throw new Error();
     const lista = await resp.json();
-    if (!lista.length) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Nenhum usuário cadastrado.</td></tr>';
-      return;
-    }
-    tbody.innerHTML = lista.map(u => {
-      const badgeCls = u.role === 'admin' ? 'role-admin' : 'role-prof';
-      const badgeTxt = u.role === 'admin' ? 'Admin' : 'Professor';
-      return `<tr>
-        <td><strong>${esc(u.nome)}</strong></td>
-        <td><code style="font-size:.85rem;">${esc(u.username)}</code></td>
-        <td><span class="role-badge ${badgeCls}">${badgeTxt}</span></td>
-        <td style="color:var(--muted);font-size:.88rem;">${esc(u.turma_nome || '—')}</td>
-        <td style="text-align:center;">
-          <button class="btn-xs btn-edit" onclick="editarUsuario(${u.id},'${esc(u.nome)}','${esc(u.username)}','${u.role}',${u.turma_id ?? 'null'})">Editar</button>
-          <button class="btn-xs btn-del" onclick="removerUsuario(${u.id},'${esc(u.nome)}')" style="margin-left:4px;">Remover</button>
-        </td>
-      </tr>`;
-    }).join('');
-  } catch {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Erro ao carregar usuários.</td></tr>';
-  }
+    document.getElementById('cnt-usuarios').textContent = lista.length;
+    if (!lista.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Nenhum usuário.</td></tr>'; return; }
+    tbody.innerHTML = lista.map(u => `<tr>
+      <td><strong>${esc(u.nome)}</strong></td>
+      <td><code style="font-size:.8rem;background:var(--bg);padding:2px 7px;border-radius:4px;color:var(--text-muted)">${esc(u.username)}</code></td>
+      <td><span class="badge ${u.role==='admin'?'role-admin':'role-prof'}">${u.role==='admin'?'Admin':'Professor'}</span></td>
+      <td style="color:var(--text-muted);font-size:.85rem">${esc(u.turma_nome||'—')}</td>
+      <td><div class="row-actions">
+        <button class="action-btn action-edit" onclick="editarUsuario(${u.id},'${esc(u.nome)}','${esc(u.username)}','${u.role}',${u.turma_id??'null'})">✏️ Editar</button>
+        <button class="action-btn action-del" onclick="removerUsuario(${u.id},'${esc(u.nome)}')">🗑️</button>
+      </div></td>
+    </tr>`).join('');
+  } catch { tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Erro.</td></tr>'; }
 }
 
 async function salvarUsuario() {
-  const editId = document.getElementById('usuarioEditId').value;
-  const nome   = document.getElementById('uNome').value.trim();
+  const editId   = document.getElementById('usuarioEditId').value;
+  const nome     = document.getElementById('uNome').value.trim();
   const username = document.getElementById('uUsername').value.trim();
-  const senha  = document.getElementById('uSenha').value;
-  const role   = document.getElementById('uRole').value;
-  const turmaId = parseInt(document.getElementById('uTurma').value) || null;
-
-  if (!nome || !username) {
-    mostrarMsg('usuario', 'Preencha Nome e Username.', 'info');
-    return;
-  }
-  if (!editId && !senha) {
-    mostrarMsg('usuario', 'Informe a senha para o novo usuário.', 'info');
-    return;
-  }
-
+  const senha    = document.getElementById('uSenha').value;
+  const role     = document.getElementById('uRole').value;
+  const turmaId  = parseInt(document.getElementById('uTurma').value) || null;
+  if (!nome || !username) { mostrarMsg('usuario', 'Preencha Nome e Username.', 'info'); return; }
+  if (!editId && !senha)  { mostrarMsg('usuario', 'Informe a senha para o novo usuário.', 'info'); return; }
   const body = { nome, username, role, turma_id: turmaId };
   if (senha) body.senha = senha;
-
+  setBtnLoading('btnSalvarUsuario', true);
   try {
-    let resp;
-    if (editId) {
-      resp = await fetch(`/api/usuarios/${editId}`, {
-        method: 'PUT',
-        headers: authHeaders(),
-        body: JSON.stringify(body),
-      });
-    } else {
-      if (!senha) { mostrarMsg('usuario', 'Senha obrigatória.', 'info'); return; }
-      resp = await fetch('/api/usuarios/', {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({ ...body, senha }),
-      });
-    }
-    if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.detail || 'Erro ao salvar');
-    }
-    mostrarMsg('usuario', `✅ Usuário ${editId ? 'atualizado' : 'criado'} com sucesso!`, 'success');
+    const url  = editId ? `/api/usuarios/${editId}` : '/api/usuarios/';
+    const resp = await fetch(url, { method: editId ? 'PUT' : 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include', body: JSON.stringify(body) });
+    if (!resp.ok) throw new Error((await resp.json()).detail || 'Erro');
+    mostrarMsg('usuario', `Usuário ${editId ? 'atualizado' : 'criado'} com sucesso!`, 'success');
     limparFormUsuario();
     await carregarUsuarios();
-  } catch (e) {
-    mostrarMsg('usuario', 'Erro: ' + e.message, 'danger');
-  }
+  } catch (e) { mostrarMsg('usuario', 'Erro: ' + e.message, 'danger'); }
+  finally { setBtnLoading('btnSalvarUsuario', false); }
 }
 
 function editarUsuario(id, nome, username, role, turmaId) {
@@ -859,30 +768,24 @@ function editarUsuario(id, nome, username, role, turmaId) {
   document.getElementById('uNome').value = nome;
   document.getElementById('uUsername').value = username;
   document.getElementById('uRole').value = role;
-  // Repopula as opções a partir do cache antes de setar o valor
-  // (garante que a opção correspondente ao turmaId exista no DOM)
   popularSelectTurmasUsuario();
   document.getElementById('uTurma').value = turmaId != null ? String(turmaId) : '';
   document.getElementById('uSenha').value = '';
-  document.getElementById('uSenha').placeholder = 'Deixe em branco para manter a atual';
-  document.getElementById('formUsuarioTitulo').textContent = '✏️ Editar Usuário';
+  document.getElementById('uSenha').placeholder = 'Deixe em branco para manter';
+  document.getElementById('formUsuarioTitulo').textContent = 'Editar Usuário';
   document.getElementById('btnCancelarUsuario').style.display = '';
   toggleTurmaField();
+  abrirAba('usuarios');
 }
 
-function cancelarEdicaoUsuario() {
-  limparFormUsuario();
-}
+function cancelarEdicaoUsuario() { limparFormUsuario(); }
 
 function limparFormUsuario() {
-  document.getElementById('usuarioEditId').value = '';
-  document.getElementById('uNome').value = '';
-  document.getElementById('uUsername').value = '';
-  document.getElementById('uSenha').value = '';
+  ['usuarioEditId','uNome','uUsername','uSenha'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('uSenha').placeholder = 'Mínimo 4 caracteres';
   document.getElementById('uRole').value = 'professor';
   document.getElementById('uTurma').value = '';
-  document.getElementById('formUsuarioTitulo').textContent = '➕ Novo Usuário';
+  document.getElementById('formUsuarioTitulo').textContent = 'Novo Usuário';
   document.getElementById('btnCancelarUsuario').style.display = 'none';
   toggleTurmaField();
 }
@@ -890,19 +793,34 @@ function limparFormUsuario() {
 async function removerUsuario(id, nome) {
   if (!confirm(`Remover o usuário "${nome}"? Esta ação não pode ser desfeita.`)) return;
   try {
-    const resp = await fetch(`/api/usuarios/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    });
-    if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.detail || 'Erro ao remover');
-    }
+    const resp = await fetch(`/api/usuarios/${id}`, { method: 'DELETE', credentials: 'include' });
+    if (!resp.ok) throw new Error((await resp.json()).detail || 'Erro');
     await carregarUsuarios();
-  } catch (e) {
-    alert('Erro: ' + e.message);
-  }
+  } catch (e) { mostrarMsg('usuario', 'Erro: ' + e.message, 'danger'); }
+}
+
+// ── Helpers ──
+function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtData(d) { return d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric'}) : '—'; }
+function fmtTrimestre(tId) { const t = trimestresCache.find(x => x.id === tId); return t ? `${t.ano}/${t.numero}º` : `Trim. ${tId}`; }
+
+function mostrarMsg(pref, txt, tipo) {
+  const el = document.getElementById('msg-' + pref);
+  el.textContent = txt;
+  el.className = 'alert alert-' + tipo;
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+
+function setBtnLoading(id, loading) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.disabled = loading;
+  if (loading) btn.classList.add('loading');
+  else btn.classList.remove('loading');
 }
 </script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
 </body>
 </html>
