@@ -1,4 +1,4 @@
-const CACHE = 'ebd-v1';
+const CACHE = 'ebd-v2';
 const STATIC = [
   '/login.html',
   '/chamada.html',
