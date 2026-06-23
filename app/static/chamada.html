@@ -1558,6 +1558,15 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
-<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
+<script>
+if ('serviceWorker' in navigator) {
+  // Limpa todos os SWs e caches antigos antes de registrar o novo
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+  navigator.serviceWorker.register('/sw.js');
+}
+</script>
 </body>
 </html>
