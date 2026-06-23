@@ -1325,6 +1325,12 @@ function renderizarPainel(data) {
       <input type="hidden" id="pres_${a.aluno_id}" value="${a.presente === true ? '1' : a.presente === false ? '0' : ''}">
     `;
     list.appendChild(card);
+    // Se já estava com falta, bloqueia materiais
+    if (a.presente === false) {
+      const b = document.getElementById(`bib_${a.aluno_id}`);
+      const r = document.getElementById(`rev_${a.aluno_id}`);
+      [b, r].forEach(el => { if (el) { el.setAttribute('disabled',''); el.style.opacity='0.35'; el.style.cursor='not-allowed'; } });
+    }
   });
 
   const vc = document.getElementById('visitantesContainer');
@@ -1357,12 +1363,33 @@ function togglePresenca(alunoId, presente) {
   const fBtn    = document.getElementById(`fBtn_${alunoId}`);
   const hidInput = document.getElementById(`pres_${alunoId}`);
   const card    = document.getElementById(`sc_${alunoId}`);
+  const bibBtn  = document.getElementById(`bib_${alunoId}`);
+  const revBtn  = document.getElementById(`rev_${alunoId}`);
 
   pBtn.classList.toggle('p-active', presente);
   fBtn.classList.toggle('f-active', !presente);
   hidInput.value = presente ? '1' : '0';
   card.classList.remove('presente', 'ausente');
   card.classList.add(presente ? 'presente' : 'ausente');
+
+  // Se marcou falta: desmarca e desabilita bíblia e revista
+  if (!presente) {
+    bibBtn?.classList.remove('on');
+    revBtn?.classList.remove('on');
+    bibBtn?.setAttribute('disabled', '');
+    revBtn?.setAttribute('disabled', '');
+    bibBtn?.style.setProperty('opacity', '0.35');
+    revBtn?.style.setProperty('opacity', '0.35');
+    bibBtn?.style.setProperty('cursor', 'not-allowed');
+    revBtn?.style.setProperty('cursor', 'not-allowed');
+  } else {
+    bibBtn?.removeAttribute('disabled');
+    revBtn?.removeAttribute('disabled');
+    bibBtn?.style.removeProperty('opacity');
+    revBtn?.style.removeProperty('opacity');
+    bibBtn?.style.removeProperty('cursor');
+    revBtn?.style.removeProperty('cursor');
+  }
 
   atualizarTotais();
   salvarRascunho();
