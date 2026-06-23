@@ -243,6 +243,12 @@ function esconderErro() {
   document.getElementById('alert').style.display = 'none';
 }
 </script>
-<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+  navigator.serviceWorker.register('/sw.js');
+}
+</script>
 </body>
 </html>
