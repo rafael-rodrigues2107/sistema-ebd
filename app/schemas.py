@@ -48,6 +48,23 @@ class TrimestreRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ProximoTrimestreTurma(BaseModel):
+    turma_nome: str
+    total: int
+
+
+class ProximoTrimestrePrevia(BaseModel):
+    """O que será criado ao gerar o próximo trimestre."""
+    ano: int
+    numero: int
+    data_inicio: date
+    data_fim: date
+    total_domingos: int
+    origem: Optional[TrimestreRead] = None  # de onde as matrículas são copiadas
+    total_matriculas: int
+    turmas: list[ProximoTrimestreTurma]
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Domingo
 # ═══════════════════════════════════════════════════════════════════════════

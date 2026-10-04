@@ -23,6 +23,10 @@ Sistema de chamada e gestão da Escola Bíblica Dominical: chamada pelos profess
   `POST /api/trimestres/` já gera os domingos.
 - A chamada lista os alunos **matriculados na turma naquele trimestre** (`matriculas.trimestre_id`).
   Trimestre novo sem matrículas = chamada vazia.
+- Virada de trimestre: botão "Gerar Próximo Trimestre" (Cadastros → Trimestres, `POST /api/trimestres/proximo`)
+  cria o seguinte ao mais recente, com domingos, e copia as matrículas ativas do último trimestre que tem matrículas.
+- `GET /api/trimestres/ativo` (padrão da chamada) prefere o trimestre que contém a data de hoje,
+  então gerar o próximo com antecedência não muda a chamada antes da hora.
 
 ## Ambiente local
 - Projeto em `C:\dev\sistema-ebd` (fora do OneDrive de propósito)

@@ -308,6 +308,20 @@
   <!-- ── ABA TRIMESTRES ── -->
   <div class="tab-panel" id="panel-trimestres">
     <div id="msg-trimestre" class="alert"></div>
+    <!-- Próximo trimestre -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Gerar Próximo Trimestre</div>
+          <div class="card-subtitle">Cria o trimestre seguinte com os domingos e já matricula os alunos nas mesmas turmas</div>
+        </div>
+      </div>
+      <div id="proximoTrimestreInfo" style="font-size:.9rem;line-height:1.6">Carregando…</div>
+      <button class="btn btn-primary" id="btnGerarProximo" onclick="gerarProximoTrimestre()" style="margin-top:12px" disabled>
+        <div class="btn-spinner"></div>
+        <span class="btn-text">Gerar próximo trimestre</span>
+      </button>
+    </div>
     <div class="form-list-grid">
       <!-- Formulário -->
       <div class="card" style="margin-bottom:0">
@@ -451,6 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('trimestreAno').value = new Date().getFullYear();
   carregarTurmas();
   carregarTrimestres();
+  carregarProximoTrimestre();
   carregarMatriculas();
   carregarAlunosCadastrados();
   popularSelectTurmasUsuario();
@@ -572,8 +587,54 @@ async function salvarTrimestre() {
     mostrarMsg('trimestre', 'Trimestre e domingos gerados com sucesso!', 'success');
     document.getElementById('trimestreNumero').value = '';
     await carregarTrimestres();
+    carregarProximoTrimestre();
   } catch (e) { mostrarMsg('trimestre', 'Erro: ' + e.message, 'danger'); }
   finally { setBtnLoading('btnSalvarTrimestre', false); }
+}
+
+let proximoTrimestre = null;
+
+async function carregarProximoTrimestre() {
+  const info = document.getElementById('proximoTrimestreInfo');
+  const btn  = document.getElementById('btnGerarProximo');
+  try {
+    const resp = await fetch('/api/trimestres/proximo', { credentials: 'include' });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.detail || 'Erro'); }
+    const p = proximoTrimestre = await resp.json();
+    const nome = `${p.numero}º Trimestre de ${p.ano}`;
+    let html = `<p><strong>${nome}</strong> — ${fmtData(p.data_inicio)} a ${fmtData(p.data_fim)}, ${p.total_domingos} domingos.</p>`;
+    if (p.origem && p.total_matriculas) {
+      html += `<p style="margin-top:6px">${p.total_matriculas} alunos serão matriculados nas mesmas turmas do ${p.origem.numero}º trimestre de ${p.origem.ano}:</p>`;
+      html += `<ul style="margin:4px 0 0 20px">${p.turmas.map(t => `<li>${t.turma_nome}: <strong>${t.total}</strong></li>`).join('')}</ul>`;
+    } else {
+      html += '<p style="margin-top:6px">Nenhuma matrícula para copiar — matricule os alunos depois, na aba Alunos.</p>';
+    }
+    info.innerHTML = html;
+    btn.querySelector('.btn-text').textContent = `Gerar ${nome}`;
+    btn.disabled = false;
+  } catch (e) {
+    proximoTrimestre = null;
+    info.textContent = 'Não foi possível carregar: ' + e.message;
+    btn.disabled = true;
+  }
+}
+
+async function gerarProximoTrimestre() {
+  const p = proximoTrimestre;
+  if (!p) return;
+  const nome = `${p.numero}º Trimestre de ${p.ano}`;
+  if (!confirm(`Gerar o ${nome} com ${p.total_domingos} domingos e ${p.total_matriculas} matrículas?\n\nMudanças de turma podem ser ajustadas depois, na aba Alunos.`)) return;
+  setBtnLoading('btnGerarProximo', true);
+  try {
+    const resp = await fetch('/api/trimestres/proximo', { method: 'POST', credentials: 'include' });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.detail || 'Erro'); }
+    mostrarMsg('trimestre', `${nome} gerado com ${p.total_domingos} domingos e ${p.total_matriculas} matrículas!`, 'success');
+    await Promise.all([carregarTrimestres(), carregarMatriculas()]);
+  } catch (e) { mostrarMsg('trimestre', 'Erro: ' + e.message, 'danger'); }
+  finally {
+    setBtnLoading('btnGerarProximo', false);
+    await carregarProximoTrimestre();
+  }
 }
 
 // ── ALUNOS ──
