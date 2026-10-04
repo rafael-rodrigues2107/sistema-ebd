@@ -1,0 +1,35 @@
+# Variáveis de ambiente (manter apenas o .env.example versionado)
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Bancos de dados locais
+*.db
+*.sqlite
+*.sqlite3
+
+# Chaves SSH / certificados
+id_rsa*
+id_ed25519*
+*.pem
+*.key
+paR6QWAP7o*
+
+# Editores e sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
