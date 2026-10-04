@@ -184,6 +184,8 @@
     <p>Gerencie turmas, alunos, trimestres e acessos do sistema</p>
   </div>
 
+  <div id="avisoTrocas" class="alert alert-info" style="cursor:pointer" onclick="abrirAba('trocas')"></div>
+
   <!-- Tabs -->
   <div class="tabs-bar" role="tablist">
     <button class="tab-btn active" onclick="abrirAba('turmas')" id="tab-turmas" role="tab">
@@ -205,6 +207,10 @@
     <button class="tab-btn" onclick="abrirAba('usuarios')" id="tab-usuarios" role="tab">
       <span class="tab-icon">🔐</span> Usuários
       <span class="tab-count" id="cnt-usuarios">—</span>
+    </button>
+    <button class="tab-btn" onclick="abrirAba('trocas')" id="tab-trocas" role="tab">
+      <span class="tab-icon">🔁</span> Solicitações
+      <span class="tab-count" id="cnt-trocas">—</span>
     </button>
   </div>
 
@@ -428,6 +434,29 @@
     </div>
   </div>
 
+  <!-- ── ABA SOLICITAÇÕES (troca de turma) ── -->
+  <div class="tab-panel" id="panel-trocas">
+    <div id="msg-troca" class="alert"></div>
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Trocas de Turma Pendentes</div>
+          <div class="card-subtitle">Pedidos dos professores. Ao aprovar, o aluno muda de turma a partir do trimestre atual — o histórico fica na turma antiga.</div>
+        </div>
+      </div>
+      <div id="trocasPendentes">Carregando…</div>
+    </div>
+    <div class="card" style="padding-bottom:0;overflow:visible;">
+      <div class="card-header"><div class="card-title">Histórico</div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Aluno</th><th>Troca</th><th>Pedido por</th><th>Situação</th></tr></thead>
+          <tbody id="trocasHistTbody"><tr class="empty-row"><td colspan="4">Carregando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script src="/static/sessao.js?v=1"></script>
@@ -451,6 +480,7 @@ function abrirAba(aba) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-' + aba).classList.add('active');
+  document.getElementById('tab-' + aba).scrollIntoView({ block: 'nearest', inline: 'nearest' });
   document.getElementById('panel-' + aba).classList.add('active');
   localStorage.setItem('ebd_cadastro_aba', aba);
 }
@@ -470,6 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
   carregarAlunosCadastrados();
   popularSelectTurmasUsuario();
   carregarUsuarios();
+  carregarTrocas();
 });
 
 // ── TURMAS ──
@@ -605,7 +636,7 @@ async function carregarProximoTrimestre() {
     let html = `<p><strong>${nome}</strong> — ${fmtData(p.data_inicio)} a ${fmtData(p.data_fim)}, ${p.total_domingos} domingos.</p>`;
     if (p.origem && p.total_matriculas) {
       html += `<p style="margin-top:6px">${p.total_matriculas} alunos serão matriculados nas mesmas turmas do ${p.origem.numero}º trimestre de ${p.origem.ano}:</p>`;
-      html += `<ul style="margin:4px 0 0 20px">${p.turmas.map(t => `<li>${t.turma_nome}: <strong>${t.total}</strong></li>`).join('')}</ul>`;
+      html += `<ul style="margin:4px 0 0 20px">${p.turmas.map(t => `<li>${esc(t.turma_nome)}: <strong>${t.total}</strong></li>`).join('')}</ul>`;
     } else {
       html += '<p style="margin-top:6px">Nenhuma matrícula para copiar — matricule os alunos depois, na aba Alunos.</p>';
     }
@@ -635,6 +666,87 @@ async function gerarProximoTrimestre() {
     setBtnLoading('btnGerarProximo', false);
     await carregarProximoTrimestre();
   }
+}
+
+// ── SOLICITAÇÕES DE TROCA DE TURMA ──
+const STATUS_TROCA = {
+  aprovada:  ['badge-on',    'Aprovada'],
+  recusada:  ['badge-off',   'Recusada'],
+  cancelada: ['badge-ativo', 'Cancelada pelo professor'],
+};
+
+async function carregarTrocas() {
+  const box   = document.getElementById('trocasPendentes');
+  const tbody = document.getElementById('trocasHistTbody');
+  try {
+    const resp = await fetch('/api/trocas/', { credentials: 'include' });
+    if (!resp.ok) throw new Error();
+    const lista = await resp.json();
+    const pend  = lista.filter(t => t.status === 'pendente');
+    const hist  = lista.filter(t => t.status !== 'pendente');
+    document.getElementById('cnt-trocas').textContent = pend.length;
+    const aviso = document.getElementById('avisoTrocas');
+    aviso.textContent = pend.length === 1
+      ? '🔁 1 pedido de troca de turma aguardando sua aprovação — toque para ver.'
+      : `🔁 ${pend.length} pedidos de troca de turma aguardando sua aprovação — toque para ver.`;
+    aviso.style.display = pend.length ? 'block' : 'none';
+
+    box.innerHTML = !pend.length
+      ? '<p style="color:var(--text-muted);font-size:.9rem">Nenhum pedido aguardando aprovação.</p>'
+      : pend.map(t => `
+        <div style="padding:14px 0;border-bottom:1px solid var(--border)">
+          <div style="font-weight:700">${esc(t.aluno_nome)}</div>
+          <div style="font-size:.88rem;margin-top:2px">${esc(t.turma_origem_nome)} → <strong>${esc(t.turma_destino_nome)}</strong></div>
+          <div style="font-size:.8rem;color:var(--text-muted);margin-top:2px">
+            Pedido por ${esc(t.solicitante_nome || '—')} em ${fmtDataHora(t.created_at)}${t.motivo ? ` · Motivo: “${esc(t.motivo)}”` : ''}
+          </div>
+          <div class="btns-row" style="margin-top:8px">
+            <button class="btn btn-primary btn-sm" onclick="decidirTroca(${t.id}, 'aprovar')">Aprovar</button>
+            <button class="btn btn-danger btn-sm" onclick="decidirTroca(${t.id}, 'recusar')">Recusar</button>
+          </div>
+        </div>`).join('');
+
+    tbody.innerHTML = !hist.length
+      ? '<tr class="empty-row"><td colspan="4">Nenhuma solicitação decidida ainda.</td></tr>'
+      : hist.map(t => {
+          const [cls, txt] = STATUS_TROCA[t.status] || ['badge-ativo', t.status];
+          return `<tr>
+            <td><strong>${esc(t.aluno_nome)}</strong></td>
+            <td style="font-size:.82rem">${esc(t.turma_origem_nome)} → ${esc(t.turma_destino_nome)}</td>
+            <td style="font-size:.82rem;color:var(--text-muted)">${esc(t.solicitante_nome || '—')}</td>
+            <td><span class="badge ${cls}">${txt}</span>${t.resposta ? `<div style="font-size:.75rem;color:var(--text-muted);margin-top:3px">${esc(t.resposta)}</div>` : ''}</td>
+          </tr>`;
+        }).join('');
+  } catch {
+    box.textContent = 'Não foi possível carregar as solicitações.';
+  }
+}
+
+async function decidirTroca(id, acao) {
+  let resposta = null;
+  if (acao === 'recusar') {
+    resposta = prompt('Motivo da recusa (opcional — o professor verá):');
+    if (resposta === null) return;  // cancelou
+  } else if (!confirm('Aprovar a troca? O aluno muda de turma a partir do trimestre atual.')) {
+    return;
+  }
+  try {
+    const resp = await fetch(`/api/trocas/${id}/${acao}`, {
+      method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include',
+      body: JSON.stringify({ resposta }),
+    });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.detail || 'Erro'); }
+    const t = await resp.json();
+    mostrarMsg('troca', acao === 'aprovar'
+      ? `${t.aluno_nome} agora está na turma ${t.turma_destino_nome}.`
+      : `Troca de ${t.aluno_nome} recusada.`, 'success');
+    await Promise.all([carregarTrocas(), carregarMatriculas(), carregarAlunosCadastrados()]);
+  } catch (e) { mostrarMsg('troca', 'Erro: ' + e.message, 'danger'); }
+}
+
+function fmtDataHora(iso) {
+  // created_at vem do servidor em UTC sem fuso
+  return new Date(iso.endsWith('Z') ? iso : iso + 'Z').toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
 }
 
 // ── ALUNOS ──

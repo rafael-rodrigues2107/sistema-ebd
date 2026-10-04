@@ -378,6 +378,58 @@
     gap: 6px;
     margin-top: 5px;
   }
+  .student-name-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .student-name-row .student-name { min-width: 0; }
+  .troca-btn {
+    flex-shrink: 0;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 1.5px dashed var(--border);
+    background: var(--bg);
+    color: var(--text-muted);
+    font-size: .8rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .troca-tag {
+    display: inline-block;
+    margin-top: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 600;
+    background: var(--warning-light);
+    color: #92400e;
+  }
+
+  /* ── Modal troca de turma ── */
+  .modal-bg {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(15,23,42,.45);
+    display: none; align-items: flex-end; justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  .modal-box {
+    background: var(--surface);
+    width: 100%; max-width: 440px;
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+    box-shadow: var(--shadow);
+  }
+  @media (min-width: 500px) { .modal-bg { align-items: center; } .modal-box { border-radius: var(--radius); } }
+  .modal-title { font-size: 1.05rem; font-weight: 800; color: var(--text); }
+  .modal-sub { font-size: .82rem; color: var(--text-muted); margin: 4px 0 16px; }
+  .modal-box textarea {
+    width: 100%; min-height: 70px; padding: 9px 12px;
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    font-family: inherit; font-size: .9rem; resize: vertical;
+  }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+  .btn-ghost {
+    padding: 10px 18px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border); background: var(--bg);
+    color: var(--text-muted); font-weight: 700; font-family: inherit; cursor: pointer;
+  }
   .mat-btn {
     padding: 3px 10px;
     border-radius: 20px;
@@ -740,7 +792,7 @@
     @page { size: A4 portrait; margin: 12mm; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     .no-print { display: none !important; }
-    .navbar, .save-bar, .selector-card, .btn-primary, .btn-add-visitante, .btn-rm, .pres-btn, .mat-btn { display: none !important; }
+    .navbar, .save-bar, .selector-card, .btn-primary, .btn-add-visitante, .btn-rm, .pres-btn, .mat-btn, .troca-btn, .troca-tag, .modal-bg { display: none !important; }
     body { padding: 0; background: #fff; }
     .chamada-header {
       display: block !important;
@@ -956,6 +1008,27 @@
     <div class="spinner"></div>
     <span class="btn-save-text">💾 Salvar Chamada</span>
   </button>
+</div>
+
+<!-- Modal: solicitar troca de turma -->
+<div class="modal-bg" id="modalTroca" onclick="if (event.target === this) fecharTroca()">
+  <div class="modal-box" role="dialog" aria-labelledby="trocaTitulo">
+    <div class="modal-title" id="trocaTitulo">Trocar de turma</div>
+    <div class="modal-sub">O pedido vai para o administrador. O aluno continua na sua turma até a aprovação.</div>
+    <div id="trocaMsg" class="alert"></div>
+    <div class="field">
+      <label for="trocaDestino">Nova turma</label>
+      <select id="trocaDestino"></select>
+    </div>
+    <div class="field">
+      <label for="trocaMotivo">Motivo (opcional)</label>
+      <textarea id="trocaMotivo" maxlength="500" placeholder="Ex.: fez 12 anos"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="fecharTroca()">Cancelar</button>
+      <button class="btn-primary" id="btnEnviarTroca" onclick="enviarTroca()">Enviar pedido</button>
+    </div>
+  </div>
 </div>
 
 <script src="/static/sessao.js?v=1"></script>
@@ -1209,6 +1282,7 @@ async function carregarTurmas() {
     lista = lerCacheSelects('turmas');
   }
   if (!lista) { sel.innerHTML = '<option value="">Sem conexão</option>'; return; }
+  turmasLista = lista;
   sel.innerHTML = '<option value="">Selecione…</option>';
   lista.forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.nome}</option>`; });
   if (role === 'professor' && turmaLS) { sel.value = turmaLS; sel.disabled = true; }
@@ -1313,11 +1387,15 @@ function renderizarPainel(data) {
     card.innerHTML = `
       <div class="student-avatar" id="av_${a.aluno_id}">${inicial}</div>
       <div class="student-info">
-        <div class="student-name">${esc(a.nome)}</div>
+        <div class="student-name-row">
+          <div class="student-name">${esc(a.nome)}</div>
+          ${a.troca_pendente_para ? '' : htmlTrocaBtn(a.aluno_id)}
+        </div>
         <div class="student-materials">
           <button class="mat-btn ${a.trouxe_biblia ? 'on' : ''}" id="bib_${a.aluno_id}" onclick="toggleMat(this)">📖 Bíblia</button>
           <button class="mat-btn ${a.trouxe_revista ? 'on' : ''}" id="rev_${a.aluno_id}" onclick="toggleMat(this)">📰 Revista</button>
         </div>
+        ${a.troca_pendente_para ? htmlTrocaTag(a.troca_pendente_para) : ''}
       </div>
       <div class="student-actions">
         <button class="pres-btn ${a.presente === true ? 'p-active' : ''}" id="pBtn_${a.aluno_id}" onclick="togglePresenca(${a.aluno_id}, true)">P</button>
@@ -1354,6 +1432,81 @@ function renderizarPainel(data) {
   document.getElementById('saveBar').classList.add('visible');
   atualizarTotais();
   document.getElementById('chamadaHeader').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  avisarTrocasDecididas();
+}
+
+// ══════════════════════════════════════════════
+// Troca de turma — professor pede, admin aprova
+// ══════════════════════════════════════════════
+let turmasLista = [];
+let trocaAluno  = null;
+
+function htmlTrocaBtn(alunoId) {
+  return `<button class="troca-btn" id="trc_${alunoId}" title="Pedir troca de turma" aria-label="Pedir troca de turma" onclick="abrirTroca(${alunoId})">⇄</button>`;
+}
+function htmlTrocaTag(turmaNome) {
+  return `<span class="troca-tag">⏳ Troca p/ ${esc(turmaNome)} — aguardando</span>`;
+}
+
+function abrirTroca(alunoId) {
+  if (!navigator.onLine) { mostrarMsg('Sem conexão — o pedido de troca precisa de internet.', 'info'); return; }
+  const nome = document.querySelector(`#sc_${alunoId} .student-name`).textContent;
+  trocaAluno = { id: alunoId, nome };
+  document.getElementById('trocaTitulo').textContent = `Trocar de turma — ${nome}`;
+  const sel = document.getElementById('trocaDestino');
+  sel.innerHTML = '<option value="">Selecione…</option>' + turmasLista
+    .filter(t => t.id !== turmaId)
+    .map(t => `<option value="${t.id}">${esc(t.nome)} — ${esc(t.faixa_etaria)}</option>`).join('');
+  document.getElementById('trocaMotivo').value = '';
+  document.getElementById('trocaMsg').style.display = 'none';
+  document.getElementById('modalTroca').classList.add('open');
+}
+
+function fecharTroca() {
+  document.getElementById('modalTroca').classList.remove('open');
+  trocaAluno = null;
+}
+
+async function enviarTroca() {
+  const destino = parseInt(document.getElementById('trocaDestino').value);
+  const msg = document.getElementById('trocaMsg');
+  const erro = txt => { msg.textContent = txt; msg.className = 'alert alert-danger'; msg.style.display = 'block'; };
+  if (!destino) { erro('Escolha a nova turma.'); return; }
+
+  const btn = document.getElementById('btnEnviarTroca');
+  btn.disabled = true;
+  try {
+    const resp = await fetch('/api/trocas/', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ aluno_id: trocaAluno.id, turma_destino_id: destino, motivo: document.getElementById('trocaMotivo').value }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.detail || 'Erro ao enviar o pedido');
+    document.getElementById(`trc_${trocaAluno.id}`).remove();
+    document.querySelector(`#sc_${trocaAluno.id} .student-info`).insertAdjacentHTML('beforeend', htmlTrocaTag(data.turma_destino_nome));
+    mostrarMsg(`Pedido enviado. ${data.aluno_nome} muda para ${data.turma_destino_nome} quando o administrador aprovar.`, 'success');
+    fecharTroca();
+  } catch (e) {
+    erro(e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Avisa o professor (uma vez) quando um pedido dele foi recusado
+async function avisarTrocasDecididas() {
+  if (role !== 'professor' || !navigator.onLine) return;
+  try {
+    const resp = await fetch('/api/trocas/?status_filtro=recusada', { credentials: 'include' });
+    if (!resp.ok) return;
+    const vistas = JSON.parse(localStorage.getItem('ebd_trocas_vistas') || '[]');
+    const novas = (await resp.json()).filter(t => !vistas.includes(t.id));
+    if (!novas.length) return;
+    mostrarMsg(novas.map(t =>
+      `Troca de ${t.aluno_nome} para ${t.turma_destino_nome} não foi aprovada${t.resposta ? `: “${t.resposta}”` : '.'}`
+    ).join(' '), 'info');
+    localStorage.setItem('ebd_trocas_vistas', JSON.stringify([...vistas, ...novas.map(t => t.id)]));
+  } catch {}
 }
 
 // ══════════════════════════════════════════════

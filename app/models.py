@@ -382,3 +382,43 @@ class Oferta(Base):
 
     def __repr__(self) -> str:
         return f"<Oferta dom={self.domingo_id} turma={self.turma_id} R$ {self.valor}>"
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 12. Solicitação de Troca de Turma
+# ═════════════════════════════════════════════════════════════════════════════
+class SolicitacaoTroca(Base):
+    """
+    Pedido do professor para mover um aluno de turma (ex.: mudou de faixa etária).
+    Só vale depois que um admin aprova.
+    """
+
+    __tablename__ = "solicitacoes_troca"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    aluno_id: Mapped[int] = mapped_column(ForeignKey("alunos.id", ondelete="CASCADE"), nullable=False)
+    turma_origem_id: Mapped[int] = mapped_column(ForeignKey("turmas.id", ondelete="CASCADE"), nullable=False)
+    turma_destino_id: Mapped[int] = mapped_column(ForeignKey("turmas.id", ondelete="CASCADE"), nullable=False)
+    motivo: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="pendente",
+        comment="pendente | aprovada | recusada | cancelada"
+    )
+    resposta: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="Observação do admin ao decidir")
+    solicitante_id: Mapped[Optional[int]] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    decidido_por_id: Mapped[Optional[int]] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    decidido_em: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+
+    __table_args__ = (
+        Index("ix_troca_status", "status"),
+    )
+
+    aluno: Mapped["Aluno"] = relationship(lazy="selectin")
+    turma_origem: Mapped["Turma"] = relationship(foreign_keys=[turma_origem_id], lazy="selectin")
+    turma_destino: Mapped["Turma"] = relationship(foreign_keys=[turma_destino_id], lazy="selectin")
+    solicitante: Mapped[Optional["Usuario"]] = relationship(foreign_keys=[solicitante_id], lazy="selectin")
+    decidido_por: Mapped[Optional["Usuario"]] = relationship(foreign_keys=[decidido_por_id], lazy="selectin")
+
+    def __repr__(self) -> str:
+        return f"<SolicitacaoTroca aluno={self.aluno_id} {self.turma_origem_id}->{self.turma_destino_id} {self.status}>"

@@ -27,6 +27,15 @@ Sistema de chamada e gestão da Escola Bíblica Dominical: chamada pelos profess
   cria o seguinte ao mais recente, com domingos, e copia as matrículas ativas do último trimestre que tem matrículas.
 - `GET /api/trimestres/ativo` (padrão da chamada) prefere o trimestre que contém a data de hoje,
   então gerar o próximo com antecedência não muda a chamada antes da hora.
+- Troca de turma: professor pede na chamada (botão ⇄), admin aprova em Cadastros → Solicitações
+  (`/api/trocas`). Aprovar ou editar a turma direto na aba Alunos usa `mover_matriculas`: muda do
+  trimestre atual em diante; trimestres anteriores e chamadas antigas ficam na turma antiga.
+
+## Direção do produto
+- Objetivo: vender para outras igrejas. Por enquanto, **uma instalação por igreja** (próprio domínio,
+  banco e container) — não é multi-tenant. Evitar soluções que amarrem o código a uma igreja só.
+- Próximo: tela "Configurações da Igreja" (nome, nome curto do app, logo com upload e cor principal),
+  com ícones do PWA gerados a partir do logo e arquivos guardados no volume `/data`.
 
 ## Ambiente local
 - Projeto em `C:\dev\sistema-ebd` (fora do OneDrive de propósito)

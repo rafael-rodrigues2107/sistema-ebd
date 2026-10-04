@@ -20,6 +20,7 @@ from routers.dashboard import router as dashboard_router
 from routers.fechamento import router as fechamento_router
 from routers.matriculas import router as matriculas_router
 from routers.trimestres import router as trimestres_router
+from routers.trocas import router as trocas_router
 from routers.turmas import router as turmas_router
 from seed import seed as executar_seed, seed_admin
 
@@ -49,6 +50,7 @@ app.include_router(fechamento_router)
 app.include_router(dashboard_router)
 app.include_router(auth_router)
 app.include_router(usuarios_router)
+app.include_router(trocas_router)
 
 # ── Arquivos estáticos (frontend) ──
 static_dir = Path(__file__).parent / "static"

@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_session
 from models import Aluno, Chamada, Domingo, Matricula, Trimestre, Turma, Usuario
 from routers.auth import get_current_user, require_admin
+from routers.trimestres import trimestre_atual
+from routers.trocas import mover_matriculas
 from schemas import AlunoCreate, AlunoHistoricoResponse, AlunoRead, AlunoUpdate, DomingoHistoricoItem, TrimestreRead
 
 router = APIRouter(prefix="/api/alunos", tags=["Alunos"], dependencies=[Depends(get_current_user)])
@@ -57,29 +59,18 @@ async def atualizar_aluno(
         setattr(aluno, field, value)
 
     if novo_turma_id is not None:
-        trim_res = await session.execute(
-            select(Trimestre)
-            .where(Trimestre.ativo == True)
-            .order_by(Trimestre.ano.desc(), Trimestre.numero.desc())
-            .limit(1)
-        )
-        trimestre = trim_res.scalar_one_or_none()
-
+        # Muda a turma do trimestre atual em diante; anteriores ficam no histórico
+        trimestre = await trimestre_atual(session)
         if trimestre:
-            mat_res = await session.execute(
-                select(Matricula)
-                .where(
+            await mover_matriculas(session, aluno_id, novo_turma_id, trimestre)
+            no_atual = await session.scalar(
+                select(Matricula.id).where(
                     Matricula.aluno_id == aluno_id,
                     Matricula.trimestre_id == trimestre.id,
                     Matricula.ativo == True,
-                )
-                .limit(1)
+                ).limit(1)
             )
-            matricula = mat_res.scalar_one_or_none()
-
-            if matricula:
-                matricula.turma_id = novo_turma_id
-            else:
+            if not no_atual:
                 session.add(Matricula(
                     aluno_id=aluno_id,
                     turma_id=novo_turma_id,

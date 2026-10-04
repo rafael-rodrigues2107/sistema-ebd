@@ -377,6 +377,7 @@ class AlunoPainelItem(BaseModel):
     trouxe_biblia: Optional[bool] = None
     trouxe_revista: Optional[bool] = None
     chamada_id: Optional[int] = None
+    troca_pendente_para: Optional[str] = None  # nome da turma pedida, se houver troca pendente
 
 
 class VisitantePainelItem(BaseModel):
@@ -394,3 +395,33 @@ class PainelResponse(BaseModel):
     alunos: list[AlunoPainelItem]
     visitantes: list[VisitantePainelItem] = []
     fechamento: Optional[FechamentoRead] = None
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Solicitação de Troca de Turma
+# ═══════════════════════════════════════════════════════════════════════════
+class SolicitacaoTrocaCreate(BaseModel):
+    aluno_id: int
+    turma_destino_id: int
+    motivo: Optional[str] = Field(default=None, max_length=500)
+
+
+class DecisaoTroca(BaseModel):
+    resposta: Optional[str] = Field(default=None, max_length=500)
+
+
+class SolicitacaoTrocaRead(BaseModel):
+    id: int
+    aluno_id: int
+    aluno_nome: str
+    turma_origem_id: int
+    turma_origem_nome: str
+    turma_destino_id: int
+    turma_destino_nome: str
+    motivo: Optional[str] = None
+    status: str
+    resposta: Optional[str] = None
+    solicitante_nome: Optional[str] = None
+    decidido_por_nome: Optional[str] = None
+    created_at: datetime
+    decidido_em: Optional[datetime] = None

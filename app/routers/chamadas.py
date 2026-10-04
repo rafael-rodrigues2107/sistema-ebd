@@ -17,6 +17,7 @@ from models import (
     Domingo,
     FechamentoDomingo,
     Matricula,
+    SolicitacaoTroca,
     Trimestre,
     Turma,
     Usuario,
@@ -87,6 +88,17 @@ async def painel_chamada(
     chamadas_result = await session.execute(chamadas_q)
     chamadas_existentes = {c.aluno_id: c for c in chamadas_result.scalars().all() if c.aluno_id is not None}
 
+    # ── Trocas de turma aguardando aprovação ──
+    trocas_q = (
+        select(SolicitacaoTroca.aluno_id, Turma.nome)
+        .join(Turma, SolicitacaoTroca.turma_destino_id == Turma.id)
+        .where(
+            SolicitacaoTroca.turma_origem_id == turma_id,
+            SolicitacaoTroca.status == "pendente",
+        )
+    )
+    trocas_pendentes = dict((await session.execute(trocas_q)).all())
+
     # ── Monta lista de alunos com status de chamada ──
     alunos: list[AlunoPainelItem] = []
     for matricula, aluno in matriculas_rows:
@@ -100,6 +112,7 @@ async def painel_chamada(
                 trouxe_biblia=chamada.trouxe_biblia if chamada else None,
                 trouxe_revista=chamada.trouxe_revista if chamada else None,
                 chamada_id=chamada.id if chamada else None,
+                troca_pendente_para=trocas_pendentes.get(aluno.id),
             )
         )
 

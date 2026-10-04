@@ -124,12 +124,11 @@ async def listar_trimestres(session: AsyncSession = Depends(get_session)):
     return result.scalars().all()
 
 
-@router.get("/ativo", response_model=TrimestreRead)
-async def trimestre_ativo(session: AsyncSession = Depends(get_session)):
+async def trimestre_atual(session: AsyncSession) -> Trimestre | None:
     """
-    Trimestre padrão dos dropdowns: o ativo que contém a data de hoje.
-    Sem nenhum em andamento, o ativo mais recente. Assim, gerar o próximo
-    trimestre com antecedência não muda a chamada antes da hora.
+    O ativo que contém a data de hoje; sem nenhum em andamento, o ativo mais
+    recente. Assim, gerar o próximo trimestre com antecedência não muda a
+    chamada antes da hora.
     """
     hoje = date.today()
     base = select(Trimestre).where(Trimestre.ativo == True).order_by(
@@ -138,8 +137,13 @@ async def trimestre_ativo(session: AsyncSession = Depends(get_session)):
     trimestre = (await session.execute(
         base.where(Trimestre.data_inicio <= hoje, Trimestre.data_fim >= hoje)
     )).scalar_one_or_none()
-    if not trimestre:
-        trimestre = (await session.execute(base)).scalar_one_or_none()
+    return trimestre or (await session.execute(base)).scalar_one_or_none()
+
+
+@router.get("/ativo", response_model=TrimestreRead)
+async def trimestre_ativo(session: AsyncSession = Depends(get_session)):
+    """Trimestre padrão dos dropdowns (ver `trimestre_atual`)."""
+    trimestre = await trimestre_atual(session)
     if not trimestre:
         raise HTTPException(status_code=404, detail="Nenhum trimestre ativo encontrado")
     return trimestre
