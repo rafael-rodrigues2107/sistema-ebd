@@ -1,5 +1,6 @@
-const CACHE = 'ebd-v2';
+const CACHE = 'ebd-v3';
 const STATIC = [
+  '/static/sessao.js?v=1',
   '/login.html',
   '/chamada.html',
   '/dashboard.html',

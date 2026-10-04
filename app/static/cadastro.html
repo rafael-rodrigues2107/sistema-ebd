@@ -416,10 +416,11 @@
 
 </div>
 
+<script src="/static/sessao.js?v=1"></script>
 <script>
 (function () {
   const role = localStorage.getItem('ebd_role');
-  if (!role || role !== 'admin') { localStorage.clear(); window.location.replace('/login.html'); }
+  if (!role || role !== 'admin') { limparSessao(); window.location.replace('/login.html'); }
 })();
 
 document.getElementById('navNome').textContent = localStorage.getItem('ebd_nome')
@@ -427,7 +428,7 @@ document.getElementById('navNome').textContent = localStorage.getItem('ebd_nome'
 
 function fazerLogout() {
   fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).finally(() => {
-    localStorage.clear(); window.location.replace('/login.html');
+    limparSessao(); window.location.replace('/login.html');
   });
 }
 

@@ -189,6 +189,10 @@
 </div>
 
 <script>
+if (new URLSearchParams(location.search).has('expirou')) {
+  mostrarErro('Sua sessão expirou. Entre novamente — chamadas pendentes serão enviadas em seguida.');
+}
+
 document.getElementById('senha').addEventListener('keydown', e => {
   if (e.key === 'Enter') fazerLogin();
 });

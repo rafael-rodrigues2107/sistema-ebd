@@ -9,9 +9,10 @@ from sqlalchemy.orm import selectinload
 
 from database import get_session
 from models import Aluno, Matricula, Turma
+from routers.auth import require_admin
 from schemas import MatriculaCreate, MatriculaDetalhadaRead
 
-router = APIRouter(prefix="/api/matriculas", tags=["Matrículas"])
+router = APIRouter(prefix="/api/matriculas", tags=["Matrículas"], dependencies=[Depends(require_admin)])
 
 
 @router.get("/", response_model=list[MatriculaDetalhadaRead])

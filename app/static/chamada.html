@@ -958,6 +958,7 @@
   </button>
 </div>
 
+<script src="/static/sessao.js?v=1"></script>
 <script>
 // ── Estado ──
 let turmaId = null, trimestreId = null, domingoId = null;
@@ -973,7 +974,7 @@ const SYNC_QUEUE    = 'ebd_sync_queue';       // fila de chamadas pendentes
 
 // ── Guarda de acesso ──
 (function () {
-  if (!role) { localStorage.clear(); window.location.replace('/login.html'); }
+  if (!role) { limparSessao(); window.location.replace('/login.html'); }
 })();
 
 // ── Inicialização ──
@@ -991,7 +992,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function fazerLogout() {
   fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).finally(() => {
-    localStorage.clear();
+    limparSessao();
     window.location.replace('/login.html');
   });
 }

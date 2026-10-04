@@ -2,29 +2,24 @@
 Rotas de CRUD para Alunos.
 """
 
-from typing import Optional
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_session
 from models import Aluno, Chamada, Domingo, Matricula, Trimestre, Turma, Usuario
-from routers.auth import get_optional_user, require_admin
+from routers.auth import get_current_user, require_admin
 from schemas import AlunoCreate, AlunoHistoricoResponse, AlunoRead, AlunoUpdate, DomingoHistoricoItem, TrimestreRead
 
-router = APIRouter(prefix="/api/alunos", tags=["Alunos"])
+router = APIRouter(prefix="/api/alunos", tags=["Alunos"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("/", response_model=list[AlunoRead])
 async def listar_alunos(
     incluir_inativos: bool = False,
+    _admin: Usuario = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_user: Optional[Usuario] = Depends(get_optional_user),
 ):
-    if incluir_inativos:
-        if not current_user or current_user.role != "admin":
-            raise HTTPException(status_code=403, detail="Acesso restrito a administradores")
     q = select(Aluno).order_by(Aluno.nome)
     if not incluir_inativos:
         q = q.where(Aluno.ativo == True)
@@ -32,7 +27,11 @@ async def listar_alunos(
 
 
 @router.post("/", response_model=AlunoRead, status_code=status.HTTP_201_CREATED)
-async def criar_aluno(body: AlunoCreate, session: AsyncSession = Depends(get_session)):
+async def criar_aluno(
+    body: AlunoCreate,
+    _admin: Usuario = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
     aluno = Aluno(**body.model_dump())
     session.add(aluno)
     await session.commit()
@@ -111,11 +110,22 @@ async def historico_aluno(
     aluno_id: int,
     trimestre_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: Usuario = Depends(get_current_user),
 ):
     """Retorna o histórico de presença de um aluno em um trimestre."""
     aluno = await session.get(Aluno, aluno_id)
     if not aluno:
         raise HTTPException(status_code=404, detail="Aluno não encontrado")
+
+    if current_user.role == "professor":
+        da_turma = await session.scalar(
+            select(Matricula.id).where(
+                Matricula.aluno_id == aluno_id,
+                Matricula.turma_id == current_user.turma_id,
+            ).limit(1)
+        )
+        if not da_turma:
+            raise HTTPException(403, "Professores só podem ver alunos de sua própria turma")
 
     trimestre = await session.get(Trimestre, trimestre_id)
     if not trimestre:

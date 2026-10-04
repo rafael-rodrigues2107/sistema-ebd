@@ -9,7 +9,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_session
-from models import Domingo, Trimestre
+from models import Domingo, Trimestre, Usuario
+from routers.auth import get_current_user, require_admin
 from schemas import (
     DomingoCreate,
     DomingoRead,
@@ -17,7 +18,7 @@ from schemas import (
     TrimestreRead,
 )
 
-router = APIRouter(prefix="/api/trimestres", tags=["Trimestres"])
+router = APIRouter(prefix="/api/trimestres", tags=["Trimestres"], dependencies=[Depends(get_current_user)])
 
 # Datas fixas de cada trimestre: numero -> (mes_inicio, dia_inicio, mes_fim, dia_fim)
 _FAIXAS = {
@@ -73,7 +74,9 @@ async def trimestre_ativo(session: AsyncSession = Depends(get_session)):
 
 @router.post("/", response_model=TrimestreRead, status_code=status.HTTP_201_CREATED)
 async def criar_trimestre(
-    body: TrimestreCreate, session: AsyncSession = Depends(get_session)
+    body: TrimestreCreate,
+    _admin: Usuario = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
 ):
     # Rejeita duplicata
     duplicado = await session.execute(
@@ -136,6 +139,7 @@ async def listar_domingos(
 async def criar_domingo(
     trimestre_id: int,
     body: DomingoCreate,
+    _admin: Usuario = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
 ):
     trimestre = await session.get(Trimestre, trimestre_id)
