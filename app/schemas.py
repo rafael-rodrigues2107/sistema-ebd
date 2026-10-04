@@ -326,6 +326,29 @@ class ConfirmarFechamentoDiaCreate(BaseModel):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# Histórico de Presença de Aluno
+# ═══════════════════════════════════════════════════════════════════════════
+class DomingoHistoricoItem(BaseModel):
+    domingo_id: int
+    data: date
+    numero: int
+    tema_licao: Optional[str] = None
+    turma_nome: Optional[str] = None
+    presente: Optional[bool] = None
+    trouxe_biblia: Optional[bool] = None
+    trouxe_revista: Optional[bool] = None
+
+
+class AlunoHistoricoResponse(BaseModel):
+    aluno: AlunoRead
+    trimestre: TrimestreRead
+    domingos: list[DomingoHistoricoItem]
+    total_domingos: int
+    total_presentes: int
+    percentual_presenca: float
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # Resposta do Painel (GET)
 # ═══════════════════════════════════════════════════════════════════════════
 class AlunoPainelItem(BaseModel):

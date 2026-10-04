@@ -5,7 +5,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Dependências do sistema para compilar asyncpg
+# Dependências do sistema
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc libpq-dev && \
     rm -rf /var/lib/apt/lists/*
@@ -17,11 +17,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia código
 COPY . .
 
+# Cria volume para persistência do banco SQLite
+RUN mkdir -p /data
+
 # Ajusta diretório de trabalho para a pasta do pacote Python
 WORKDIR /app/app
 
-# Expõe porta
 EXPOSE 8000
 
-# Comando padrão — main:app porque WORKDIR já está dentro de app/
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]

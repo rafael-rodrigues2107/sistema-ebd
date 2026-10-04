@@ -3,480 +3,396 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fechamento EBD</title>
+<title>Fechamento — Sistema EBD</title>
+<meta name="theme-color" content="#4f46e5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EBD">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f4f5f7;
-    --card: #fff;
-    --border: #dde1e6;
-    --text: #212529;
-    --muted: #6c757d;
-    --primary: #0d6efd;
-    --success: #198754;
-    --danger: #dc3545;
-    --warning: #ffc107;
-    --radius: 8px;
+    --primary: #4f46e5; --primary-dark: #4338ca; --primary-light: #ede9fe;
+    --success: #10b981; --success-light: #d1fae5; --success-dark: #059669;
+    --danger: #ef4444; --danger-light: #fee2e2;
+    --warning: #f59e0b;
+    --bg: #f1f5f9; --surface: #ffffff; --border: #e2e8f0;
+    --text: #0f172a; --text-muted: #64748b; --text-subtle: #94a3b8;
+    --radius: 12px; --radius-sm: 8px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.06); --shadow: 0 4px 6px -1px rgba(0,0,0,.07);
+    --nav-h: 60px;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 24px; }
-  .container { max-width: 1100px; margin: 0 auto; }
-  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 8px; }
-  h1 { font-size: 1.5rem; color: var(--primary); }
-  h2 { font-size: 1.1rem; margin-bottom: 14px; }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
-  .nav-link { font-size: .85rem; color: var(--muted); text-decoration: none; border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; }
-  .nav-link:hover { background: #f0f0f0; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); padding-top: var(--nav-h); }
 
-  /* Seletor */
-  .filter-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+  /* Navbar */
+  .navbar { position: fixed; top: 0; left: 0; right: 0; height: var(--nav-h); background: rgba(255,255,255,.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); z-index: 100; display: flex; align-items: center; padding: 0 20px; gap: 16px; }
+  .nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1rem; color: var(--text); text-decoration: none; letter-spacing: -.02em; flex-shrink: 0; }
+  .nav-logo { width: 34px; height: 34px; background: var(--primary-light); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .nav-links { display: flex; gap: 4px; flex: 1; }
+  .nav-link { padding: 6px 12px; border-radius: 6px; font-size: .82rem; font-weight: 600; color: var(--text-muted); text-decoration: none; white-space: nowrap; transition: background .15s, color .15s; }
+  .nav-link:hover { background: var(--bg); color: var(--text); }
+  .nav-link.active { background: var(--primary-light); color: var(--primary); }
+  .nav-user { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .nav-name { font-size: .82rem; font-weight: 600; color: var(--text-muted); }
+  .btn-logout { padding: 5px 12px; font-size: .8rem; font-weight: 600; font-family: inherit; color: var(--text-muted); background: transparent; border: 1.5px solid var(--border); border-radius: 6px; cursor: pointer; transition: .15s; }
+  .btn-logout:hover { background: var(--bg); color: var(--text); }
+
+  /* Layout */
+  .container { max-width: 1000px; margin: 0 auto; padding: 24px 20px; }
+  .page-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: 20px; }
+
+  /* Card */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow-sm); }
+  .card-title { font-size: .95rem; font-weight: 700; color: var(--text); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+  /* Filter */
+  .filter-row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
   .field { flex: 1; min-width: 160px; }
-  .field label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 4px; color: var(--muted); }
-  .field select, .field input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; }
-  .field select:focus, .field input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13,110,253,.15); }
+  .field label { display: block; font-size: .75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
+  .field select, .field input[type="text"] { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: .9rem; font-family: inherit; color: var(--text); background: var(--surface); appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; transition: border-color .15s, box-shadow .15s; }
+  .field input[type="text"] { background-image: none; padding-right: 12px; }
+  .field select:focus, .field input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
 
-  /* Cards de destaque */
-  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
-  @media (max-width: 700px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 400px) { .stats-grid { grid-template-columns: 1fr; } }
-  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 16px; text-align: center; }
-  .stat-card .stat-value { font-size: 2.2rem; font-weight: 700; line-height: 1.1; margin: 6px 0 4px; }
-  .stat-card .stat-label { font-size: .75rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
-  .stat-card.blue   .stat-value { color: var(--primary); }
-  .stat-card.green  .stat-value { color: var(--success); }
-  .stat-card.orange .stat-value { color: #fd7e14; }
-  .stat-card.teal   .stat-value { color: #0dcaf0; }
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border: none; border-radius: var(--radius-sm); font-size: .9rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: background .15s; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover { background: var(--success-dark); }
+  .btn-ghost { background: var(--bg); color: var(--text-muted); border: 1.5px solid var(--border); }
+  .btn-ghost:hover { background: var(--border); }
+
+  /* Alert */
+  .alert { padding: 12px 16px; border-radius: var(--radius-sm); font-size: .875rem; font-weight: 500; margin-bottom: 16px; display: none; border: 1px solid; }
+  .alert-info    { background: #e0f2fe; border-color: #bae6fd; color: #0369a1; }
+  .alert-success { background: var(--success-light); border-color: #6ee7b7; color: #065f46; }
+  .alert-danger  { background: var(--danger-light); border-color: #fca5a5; color: #b91c1c; }
+
+  /* KPI row */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  @media (max-width: 600px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; box-shadow: var(--shadow-sm); }
+  .kpi-label { font-size: .68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+  .kpi-value { font-size: 2rem; font-weight: 800; line-height: 1; }
+  .kpi.blue .kpi-value  { color: var(--primary); }
+  .kpi.green .kpi-value { color: var(--success); }
+  .kpi.amber .kpi-value { color: var(--warning); }
+  .kpi.teal .kpi-value  { color: #0891b2; }
 
   /* Info bar */
-  .info-bar { display: flex; gap: 24px; flex-wrap: wrap; padding: 12px 16px; background: #f0f4ff; border: 1px solid #c6d3f7; border-radius: 8px; margin-bottom: 20px; font-size: .9rem; }
-  .info-bar span { color: var(--muted); }
-  .info-bar strong { color: var(--text); }
+  .info-bar { display: flex; gap: 20px; flex-wrap: wrap; padding: 12px 16px; background: var(--primary-light); border-radius: var(--radius-sm); margin-bottom: 20px; font-size: .85rem; }
+  .info-bar span { color: var(--text-muted); font-weight: 500; }
+  .info-bar strong { color: var(--primary-dark); }
 
-  /* Tabela */
+  /* Table */
   table { width: 100%; border-collapse: collapse; }
-  th, td { padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: left; font-size: .92rem; }
-  th { background: #f8f9fa; font-weight: 600; color: var(--muted); font-size: .8rem; text-transform: uppercase; }
+  th, td { padding: 10px 10px; border-bottom: 1px solid var(--border); text-align: left; font-size: .875rem; }
+  th { font-size: .72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; background: var(--bg); }
   th.num, td.num { text-align: center; }
-  tbody tr:hover { background: #f8f9fa; }
-  .tfoot-total td { background: #f0f4ff; font-weight: 700; border-top: 2px solid var(--primary); }
+  tbody tr:hover td { background: var(--bg); }
+  .tfoot-row td { background: var(--primary-light) !important; font-weight: 700; border-top: 2px solid var(--primary); color: var(--primary-dark); }
+  .badge-ok   { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .75rem; font-weight: 700; background: var(--success-light); color: #065f46; }
+  .badge-zero { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .75rem; font-weight: 700; background: var(--danger-light); color: #991b1b; }
 
-  /* Alerts */
-  .alert { padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-size: .9rem; display: none; }
-  .alert-info    { background: #cff4fc; border: 1px solid #b6effb; }
-  .alert-success { background: #d1e7dd; border: 1px solid #badbcc; }
-  .alert-danger  { background: #f8d7da; border: 1px solid #f5c2c7; }
+  /* Confirmar section */
+  .confirmar-section { border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 18px; }
+  .confirmar-hint { font-size: .85rem; color: var(--text-muted); font-weight: 500; margin-bottom: 14px; }
 
-  /* Botões */
-  .btn { padding: 10px 24px; border: none; border-radius: 6px; font-size: .95rem; cursor: pointer; font-weight: 600; transition: background .15s; }
-  .btn-primary { background: var(--primary); color: #fff; }
-  .btn-primary:hover { background: #0b5ed7; }
-  .btn-success { background: var(--success); color: #fff; }
-  .btn-success:hover { background: #157347; }
-  .btn-sm { padding: 6px 16px; font-size: .85rem; }
-
-  /* Badge */
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .78rem; font-weight: 600; }
-  .badge-ok   { background: #d1e7dd; color: #0f5132; }
-  .badge-zero { background: #f8d7da; color: #842029; }
+  /* Print */
+  .print-only { display: none; }
+  @media print {
+    @page { size: A4 portrait; margin: 12mm; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .no-print { display: none !important; }
+    .print-only { display: block !important; }
+    body { background: #fff !important; padding: 0 !important; }
+    .navbar { display: none !important; }
+    .card { border: none !important; box-shadow: none !important; padding: 0 !important; margin-bottom: 12pt !important; }
+    .kpi-row { grid-template-columns: repeat(4, 1fr) !important; gap: 6pt !important; margin-bottom: 12pt !important; }
+    .kpi { border: 1px solid #e2e8f0 !important; border-radius: 4pt !important; padding: 8pt !important; }
+    .kpi-value { font-size: 18pt !important; }
+    th, td { font-size: 8.5pt !important; padding: 4pt 6pt !important; border: 1px solid #e2e8f0 !important; }
+    th { background: #ede9fe !important; }
+    .info-bar { font-size: 8pt !important; gap: 12pt !important; padding: 6pt 10pt !important; }
+    .print-header { text-align: center; padding-bottom: 12pt; border-bottom: 2px solid #4f46e5; margin-bottom: 16pt; }
+    .print-header h1 { font-size: 14pt; color: #4f46e5 !important; }
+    .print-header p  { font-size: 9pt; color: #64748b; margin-top: 4pt; }
+    .print-footer { margin-top: 20pt; text-align: center; font-size: 8pt; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 8pt; }
+  }
 
   #resumo { display: none; }
-
-  .btn-print { background: #495057; color: #fff; }
-  .btn-print:hover { background: #343a40; }
-
-  /* Elementos exclusivos para impressão ficam ocultos na tela */
-  .print-only { display: none; }
-
-  /* ── @media print ─────────────────────────────────────────── */
-  @media print {
-    @page { size: A4 portrait; margin: 14mm 12mm; }
-
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-
-    body { background: #fff !important; padding: 0 !important; color: #000 !important; font-size: 10.5pt; }
-    .container { max-width: 100% !important; }
-
-    /* Ocultar elementos operacionais */
-    .no-print { display: none !important; }
-
-    /* Revelar elementos só-impressão */
-    .print-only { display: block !important; }
-
-    /* Remover decoração de cards */
-    .card { border: none !important; border-radius: 0 !important; padding: 0 !important; margin-bottom: 14pt !important; box-shadow: none !important; }
-
-    /* Info bar */
-    .info-bar { background: #eef2ff !important; border: 1px solid #c7d2fe !important; border-radius: 4px !important; padding: 8pt 12pt !important; font-size: 9.5pt !important; gap: 18pt !important; margin-bottom: 14pt !important; }
-    .info-bar strong { color: #000 !important; }
-
-    /* Cards de totais */
-    .stats-grid { grid-template-columns: repeat(4, 1fr) !important; gap: 8pt !important; margin-bottom: 14pt !important; }
-    .stat-card { border: 1.5px solid #dde1e6 !important; border-radius: 4px !important; padding: 10pt 6pt !important; }
-    .stat-card .stat-value { font-size: 22pt !important; }
-    .stat-card .stat-label { font-size: 7pt !important; letter-spacing: .04em !important; }
-    .stat-card.blue   .stat-value { color: #0d6efd !important; }
-    .stat-card.green  .stat-value { color: #198754 !important; }
-    .stat-card.orange .stat-value { color: #fd7e14 !important; }
-    .stat-card.teal   .stat-value { color: #0891b2 !important; }
-
-    /* Tabela */
-    h2 { font-size: 11pt !important; margin-bottom: 8pt !important; }
-    table { border-collapse: collapse !important; width: 100% !important; page-break-inside: avoid; }
-    th, td { border: 1px solid #adb5bd !important; padding: 5pt 7pt !important; font-size: 9.5pt !important; }
-    th { background: #eef2ff !important; color: #374151 !important; font-size: 8pt !important; text-transform: uppercase !important; }
-    th.num, td.num { text-align: center !important; }
-    .tfoot-total td { background: #eef2ff !important; font-weight: 700 !important; border-top: 2px solid #0d6efd !important; }
-    tbody tr:hover { background: transparent !important; }
-    .badge { border: 1px solid #aaa !important; border-radius: 3px !important; background: transparent !important; color: #000 !important; padding: 1pt 4pt !important; }
-
-    /* Cabeçalho do relatório */
-    .print-header { text-align: center !important; padding-bottom: 14pt !important; border-bottom: 2px solid #0d6efd !important; margin-bottom: 18pt !important; }
-    .print-header .ph-icon { display: block !important; font-size: 2rem !important; margin-bottom: 4pt !important; }
-    .print-header h1 { font-size: 15pt !important; color: #0d6efd !important; margin-bottom: 3pt !important; }
-    .print-header h2 { font-size: 11pt !important; font-weight: 400 !important; color: #555 !important; margin: 0 0 3pt !important; }
-    .print-header p  { font-size: 9pt !important; color: #777 !important; }
-
-    /* Rodapé do relatório */
-    .print-footer { display: block !important; margin-top: 20pt !important; text-align: center !important; font-size: 8pt !important; color: #999 !important; border-top: 1px solid #e0e0e0 !important; padding-top: 8pt !important; }
-  }
 </style>
 </head>
 <body>
-<div class="container">
 
-  <!-- ── Topbar ── -->
-  <div class="topbar no-print">
-    <h1>📊 Fechamento do Domingo — EBD</h1>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <a href="/dashboard.html" class="nav-link">📈 Dashboard</a>
-      <a href="/" class="nav-link">📋 Chamada</a>
-      <a href="/cadastro.html" class="nav-link">⚙️ Cadastros</a>
-      <button onclick="fazerLogout()" class="nav-link" style="cursor:pointer;background:transparent;">Sair</button>
-    </div>
+<nav class="navbar no-print">
+  <a class="nav-brand" href="/"><div class="nav-logo">⛪</div><span>EBD</span></a>
+  <div class="nav-links">
+    <a href="/" class="nav-link">Chamada</a>
+    <a href="/fechamento.html" class="nav-link active">Fechamento</a>
+    <a href="/dashboard.html" class="nav-link">Dashboard</a>
+    <a href="/cadastro.html" class="nav-link">Cadastros</a>
   </div>
+  <div class="nav-user">
+    <span class="nav-name" id="navNome"></span>
+    <button class="btn-logout" onclick="fazerLogout()">Sair</button>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-title no-print">📊 Fechamento do Domingo</div>
 
   <div id="msg" class="alert no-print"></div>
 
-  <!-- ── Seletor de Domingo ── -->
+  <!-- Seletor -->
   <div class="card no-print">
     <div class="filter-row">
       <div class="field">
-        <label for="trimestreSelect">Trimestre</label>
+        <label>Trimestre</label>
         <select id="trimestreSelect"><option value="">Carregando…</option></select>
       </div>
       <div class="field">
-        <label for="domingoSelect">Domingo</label>
-        <select id="domingoSelect"><option value="">Selecione um trimestre…</option></select>
+        <label>Domingo</label>
+        <select id="domingoSelect"><option value="">Selecione um trimestre</option></select>
       </div>
-      <div>
-        <button class="btn btn-primary" onclick="carregarResumo()">🔍 Carregar Resumo</button>
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <button class="btn btn-primary" onclick="carregarResumo()">🔍 Carregar</button>
       </div>
     </div>
   </div>
 
-  <!-- ── Resumo (oculto até carregar) ── -->
+  <!-- Relatório -->
   <div id="resumo">
 
-    <!-- Cabeçalho formal — visível apenas na impressão -->
+    <!-- Cabeçalho de impressão -->
     <div class="print-only print-header">
-      <span class="ph-icon">⛪</span>
-      <h1>Escola Bíblica Dominical</h1>
-      <h2>Relatório de Fechamento do Domingo</h2>
-      <p id="printMeta"></p>
+      <h1>⛪ Escola Bíblica Dominical</h1>
+      <p>Relatório de Fechamento do Domingo — <span id="printMeta"></span></p>
     </div>
 
-    <!-- Botão de impressão — oculto na impressão -->
-    <div class="no-print" style="display:flex;justify-content:flex-end;margin-bottom:16px;">
-      <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir Relatório (PDF)</button>
+    <!-- Botão imprimir -->
+    <div class="no-print" style="display:flex;justify-content:flex-end;gap:10px;margin-bottom:16px;">
+      <button class="btn btn-ghost" onclick="window.print()">🖨️ Imprimir / PDF</button>
+      <button class="btn btn-success" onclick="confirmarFechamento()">💾 Confirmar Fechamento</button>
     </div>
 
     <!-- Info bar -->
     <div class="info-bar" id="infoBar"></div>
 
-    <!-- Cards de destaque -->
-    <div class="stats-grid">
-      <div class="stat-card blue">
-        <div class="stat-label">Presentes</div>
-        <div class="stat-value" id="statPresentes">—</div>
-      </div>
-      <div class="stat-card green">
-        <div class="stat-label">Bíblias</div>
-        <div class="stat-value" id="statBiblias">—</div>
-      </div>
-      <div class="stat-card orange">
-        <div class="stat-label">Revistas</div>
-        <div class="stat-value" id="statRevistas">—</div>
-      </div>
-      <div class="stat-card teal">
-        <div class="stat-label">Ofertas do Dia</div>
-        <div class="stat-value" id="statOfertas">—</div>
-      </div>
+    <!-- KPIs -->
+    <div class="kpi-row">
+      <div class="kpi blue"><div class="kpi-label">Presentes</div><div class="kpi-value" id="kpiPresentes">—</div></div>
+      <div class="kpi green"><div class="kpi-label">Bíblias</div><div class="kpi-value" id="kpiBiblias">—</div></div>
+      <div class="kpi amber"><div class="kpi-label">Revistas</div><div class="kpi-value" id="kpiRevistas">—</div></div>
+      <div class="kpi teal"><div class="kpi-label">Ofertas</div><div class="kpi-value" id="kpiOfertas">—</div></div>
     </div>
 
     <!-- Tabela por turma -->
     <div class="card">
-      <h2>📋 Resumo por Classe</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Classe</th>
-            <th class="num">Matriculados</th>
-            <th class="num">Ausentes</th>
-            <th class="num">Presentes</th>
-            <th class="num">Visitantes</th>
-            <th class="num">Total</th>
-            <th class="num">Bíblias</th>
-            <th class="num">Revistas</th>
-            <th class="num">Ofertas (R$)</th>
-          </tr>
-        </thead>
-        <tbody id="resumoTbody"></tbody>
-        <tfoot>
-          <tr class="tfoot-total" id="resumoTfoot">
-            <td>Total Geral</td>
-            <td class="num" id="ftMatriculados">—</td>
-            <td class="num" id="ftAusentes">—</td>
-            <td class="num" id="ftPresentes">—</td>
-            <td class="num" id="ftVisitantes">—</td>
-            <td class="num" id="ftTotal">—</td>
-            <td class="num" id="ftBiblias">—</td>
-            <td class="num" id="ftRevistas">—</td>
-            <td class="num" id="ftOfertas">—</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-
-    <!-- Confirmação — oculta na impressão -->
-    <div class="card no-print">
-      <h2>✅ Confirmar Fechamento</h2>
-      <p style="color:var(--muted);font-size:.9rem;margin-bottom:14px;">
-        Ao confirmar, os totais calculados serão salvos como fechamento oficial deste domingo para cada turma.
-      </p>
-      <div class="field" style="max-width:520px;margin-bottom:16px;">
-        <label for="obsInput">Observações <span style="font-weight:400">(opcional)</span></label>
-        <input type="text" id="obsInput" placeholder="Ex: Culto missionário, batismo…">
+      <div class="card-title">📋 Resumo por Classe</div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Classe</th>
+              <th class="num">Matr.</th>
+              <th class="num">Aus.</th>
+              <th class="num">Pres.</th>
+              <th class="num">Visit.</th>
+              <th class="num">Total</th>
+              <th class="num">Bíblias</th>
+              <th class="num">Revistas</th>
+              <th class="num">Ofertas</th>
+            </tr>
+          </thead>
+          <tbody id="resumoTbody"></tbody>
+          <tfoot>
+            <tr class="tfoot-row">
+              <td><strong>Total Geral</strong></td>
+              <td class="num" id="ftMatr">—</td>
+              <td class="num" id="ftAus">—</td>
+              <td class="num" id="ftPres">—</td>
+              <td class="num" id="ftVis">—</td>
+              <td class="num" id="ftTot">—</td>
+              <td class="num" id="ftBib">—</td>
+              <td class="num" id="ftRev">—</td>
+              <td class="num" id="ftOfe">—</td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
-      <button class="btn btn-success" onclick="confirmarFechamento()">💾 Confirmar Fechamento do Dia</button>
     </div>
 
-    <!-- Rodapé formal — visível apenas na impressão -->
+    <!-- Confirmar -->
+    <div class="card no-print">
+      <div class="card-title">✅ Confirmar Fechamento Oficial</div>
+      <div class="confirmar-section">
+        <p class="confirmar-hint">Ao confirmar, os totais calculados serão salvos como registro oficial deste domingo para cada turma.</p>
+        <div class="field" style="max-width:500px;margin-bottom:16px;">
+          <label>Observações (opcional)</label>
+          <input type="text" id="obsInput" placeholder="Ex: Culto missionário, batismo…">
+        </div>
+        <button class="btn btn-success" onclick="confirmarFechamento()">💾 Confirmar Fechamento do Dia</button>
+      </div>
+    </div>
+
+    <!-- Rodapé de impressão -->
     <div class="print-only print-footer">
-      Gerado em <span id="printGeradoEm"></span> &nbsp;·&nbsp; Sistema EBD
+      Gerado em <span id="printGeradoEm"></span> · Sistema EBD
     </div>
 
   </div>
 </div>
 
 <script>
-// ── Guarda de acesso: apenas admin ──
 (function () {
-  const token = localStorage.getItem('ebd_token');
-  const role  = localStorage.getItem('ebd_role');
-  if (!token || role !== 'admin') {
-    localStorage.clear();
-    if (role && role !== 'admin') alert('Acesso negado. Esta área é exclusiva para administradores.');
-    window.location.replace('/login.html');
-  }
+  const role = localStorage.getItem('ebd_role');
+  if (!role || role !== 'admin') { localStorage.clear(); window.location.replace('/login.html'); }
 })();
 
+document.getElementById('navNome').textContent = localStorage.getItem('ebd_nome') ? `Olá, ${localStorage.getItem('ebd_nome').split(' ')[0]}` : '';
+
 function fazerLogout() {
-  localStorage.clear();
-  window.location.replace('/login.html');
+  fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).finally(() => {
+    localStorage.clear(); window.location.replace('/login.html');
+  });
 }
 
 let domingoIdAtual = null;
 
-function _authHeader() {
-  return { 'Authorization': `Bearer ${localStorage.getItem('ebd_token')}` };
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  carregarTrimestres();
-});
-
-// ── Seletores ──
+document.addEventListener('DOMContentLoaded', carregarTrimestres);
 
 async function carregarTrimestres() {
   const sel = document.getElementById('trimestreSelect');
   try {
-    const resp = await fetch('/api/trimestres/');
+    const resp = await fetch('/api/trimestres/', { credentials: 'include' });
     const lista = await resp.json();
     sel.innerHTML = '<option value="">Selecione…</option>';
-    lista.forEach(t => {
-      sel.innerHTML += `<option value="${t.id}">${t.ano} — ${t.numero}º Trimestre</option>`;
-    });
-    const ativoResp = await fetch('/api/trimestres/ativo').catch(() => null);
-    if (ativoResp && ativoResp.ok) {
-      const ativo = await ativoResp.json();
-      sel.value = ativo.id;
-      await carregarDomingos(ativo.id);
-    }
-  } catch {
-    sel.innerHTML = '<option value="">Erro ao carregar</option>';
-  }
+    lista.forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.ano} — ${t.numero}º Trimestre</option>`; });
+    const ar = await fetch('/api/trimestres/ativo', { credentials: 'include' }).catch(() => null);
+    if (ar && ar.ok) { const a = await ar.json(); sel.value = a.id; await carregarDomingos(a.id); }
+  } catch { sel.innerHTML = '<option value="">Erro</option>'; }
 }
 
 document.getElementById('trimestreSelect').addEventListener('change', function () {
-  const tid = parseInt(this.value);
   document.getElementById('resumo').style.display = 'none';
   domingoIdAtual = null;
+  const tid = parseInt(this.value);
   if (tid) carregarDomingos(tid);
 });
 
-async function carregarDomingos(trimestreId) {
+async function carregarDomingos(tId) {
   const sel = document.getElementById('domingoSelect');
   sel.innerHTML = '<option value="">Carregando…</option>';
   try {
-    const resp = await fetch(`/api/trimestres/${trimestreId}/domingos`);
+    const resp = await fetch(`/api/trimestres/${tId}/domingos`, { credentials: 'include' });
     const lista = await resp.json();
     sel.innerHTML = '<option value="">Selecione…</option>';
     lista.forEach(d => {
-      const data = new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR');
-      sel.innerHTML += `<option value="${d.id}">${d.numero}º Domingo — ${data}</option>`;
+      const dt = new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR');
+      sel.innerHTML += `<option value="${d.id}">${d.numero}º Domingo — ${dt}</option>`;
     });
-  } catch {
-    sel.innerHTML = '<option value="">Erro ao carregar</option>';
-  }
+    if (lista.length) {
+      const hoje = new Date().toISOString().slice(0,10);
+      const prox = lista.reduce((p, c) => Math.abs(new Date(c.data) - new Date(hoje)) < Math.abs(new Date(p.data) - new Date(hoje)) ? c : p);
+      sel.value = prox.id;
+    }
+  } catch { sel.innerHTML = '<option value="">Erro</option>'; }
 }
-
-// ── Carregar Resumo ──
 
 async function carregarResumo() {
   const domingoId = parseInt(document.getElementById('domingoSelect').value);
-  if (!domingoId) {
-    mostrarMsg('Selecione um Trimestre e um Domingo.', 'info');
-    return;
-  }
+  if (!domingoId) { mostrarMsg('Selecione um trimestre e um domingo.', 'info'); return; }
   domingoIdAtual = domingoId;
-
   try {
-    const resp = await fetch(`/api/fechamento/${domingoId}`, { headers: _authHeader() });
-    if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.detail || 'Erro ao carregar resumo');
-    }
-    const data = await resp.json();
-    renderizarResumo(data);
+    const resp = await fetch(`/api/fechamento/${domingoId}`, { credentials: 'include' });
+    if (!resp.ok) throw new Error((await resp.json()).detail || 'Erro');
+    renderizarResumo(await resp.json());
     esconderMsg();
-  } catch (e) {
-    console.error('[carregarResumo]', e);
-    mostrarMsg('Erro: ' + e.message, 'danger');
-  }
+  } catch (e) { mostrarMsg('Erro: ' + e.message, 'danger'); }
 }
 
 function renderizarResumo(data) {
-  // Preenche meta do cabeçalho de impressão
-  const domingoData = new Date(data.domingo_data + 'T00:00:00').toLocaleDateString('pt-BR');
-  document.getElementById('printMeta').textContent =
-    `${domingoData} — ${data.domingo_numero}º Domingo · ${data.trimestre_ano}/${data.trimestre_numero}º Trimestre`;
-  document.getElementById('printGeradoEm').textContent =
-    new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+  const domData = new Date(data.domingo_data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+  document.getElementById('printMeta').textContent = `${domData} · ${data.trimestre_ano}/${data.trimestre_numero}º Trimestre`;
+  document.getElementById('printGeradoEm').textContent = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 
-  // Info bar
   document.getElementById('infoBar').innerHTML = `
-    <span>📅 <strong>${domingoData}</strong> — ${data.domingo_numero}º Domingo</span>
-    <span>📆 Trimestre <strong>${data.trimestre_ano}/${data.trimestre_numero}º</strong></span>
+    <span>📅 <strong>${domData}</strong></span>
+    <span>📆 <strong>${data.trimestre_ano}/${data.trimestre_numero}º</strong> Trimestre</span>
     <span>👥 Matriculados no trimestre: <strong>${data.total_matriculados_trimestre}</strong></span>
-    <span>🚶 Visitantes: <strong>${data.total_visitantes}</strong></span>
+    <span>🚶 Visitantes do dia: <strong>${data.total_visitantes}</strong></span>
   `;
 
-  // Cards de destaque
-  document.getElementById('statPresentes').textContent = data.total_presentes;
-  document.getElementById('statBiblias').textContent = data.total_biblias;
-  document.getElementById('statRevistas').textContent = data.total_revistas;
-  document.getElementById('statOfertas').textContent = 'R$ ' + parseFloat(data.total_ofertas).toFixed(2).replace('.', ',');
+  document.getElementById('kpiPresentes').textContent = data.total_presentes;
+  document.getElementById('kpiBiblias').textContent   = data.total_biblias;
+  document.getElementById('kpiRevistas').textContent  = data.total_revistas;
+  document.getElementById('kpiOfertas').textContent   = fmtMoeda(data.total_ofertas);
 
-  // Tabela por turma
   const tbody = document.getElementById('resumoTbody');
   if (!data.por_turma.length) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px;font-style:italic;">Nenhuma chamada registrada para este domingo.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-subtle);padding:20px;font-style:italic;">Nenhuma chamada registrada para este domingo.</td></tr>';
   } else {
     tbody.innerHTML = data.por_turma.map(t => {
-      const totalPessoas = t.total_presentes + t.total_visitantes;
-      return `
-      <tr>
+      const tot = t.total_presentes + t.total_visitantes;
+      return `<tr>
         <td><strong>${esc(t.turma_nome)}</strong></td>
         <td class="num">${t.total_matriculados}</td>
         <td class="num">${t.total_ausentes}</td>
-        <td class="num">
-          <span class="badge ${t.total_presentes > 0 ? 'badge-ok' : 'badge-zero'}">${t.total_presentes}</span>
-        </td>
+        <td class="num"><span class="${t.total_presentes > 0 ? 'badge-ok' : 'badge-zero'}">${t.total_presentes}</span></td>
         <td class="num">${t.total_visitantes}</td>
-        <td class="num"><strong>${totalPessoas}</strong></td>
+        <td class="num"><strong>${tot}</strong></td>
         <td class="num">${t.total_biblias}</td>
         <td class="num">${t.total_revistas}</td>
-        <td class="num">R$ ${parseFloat(t.valor_ofertas).toFixed(2).replace('.', ',')}</td>
+        <td class="num">${fmtMoeda(t.valor_ofertas)}</td>
       </tr>`;
     }).join('');
   }
 
-  // Rodapé totais
-  const totMat  = data.por_turma.reduce((s, t) => s + t.total_matriculados, 0);
-  const totAus  = data.por_turma.reduce((s, t) => s + t.total_ausentes, 0);
-  const totPres = data.por_turma.reduce((s, t) => s + t.total_presentes, 0);
-  const totVis  = data.por_turma.reduce((s, t) => s + t.total_visitantes, 0);
-  const totTotal = totPres + totVis;
-  const totBib  = data.por_turma.reduce((s, t) => s + t.total_biblias, 0);
-  const totRev  = data.por_turma.reduce((s, t) => s + t.total_revistas, 0);
-  const totOfe  = data.por_turma.reduce((s, t) => s + parseFloat(t.valor_ofertas), 0);
-  document.getElementById('ftMatriculados').textContent = totMat;
-  document.getElementById('ftAusentes').textContent     = totAus;
-  document.getElementById('ftPresentes').textContent    = totPres;
-  document.getElementById('ftVisitantes').textContent   = totVis;
-  document.getElementById('ftTotal').textContent        = totTotal;
-  document.getElementById('ftBiblias').textContent      = totBib;
-  document.getElementById('ftRevistas').textContent     = totRev;
-  document.getElementById('ftOfertas').textContent      = 'R$ ' + totOfe.toFixed(2).replace('.', ',');
+  const sum = (key) => data.por_turma.reduce((s, t) => s + (t[key] || 0), 0);
+  document.getElementById('ftMatr').textContent = sum('total_matriculados');
+  document.getElementById('ftAus').textContent  = sum('total_ausentes');
+  document.getElementById('ftPres').textContent = sum('total_presentes');
+  document.getElementById('ftVis').textContent  = sum('total_visitantes');
+  document.getElementById('ftTot').textContent  = sum('total_presentes') + sum('total_visitantes');
+  document.getElementById('ftBib').textContent  = sum('total_biblias');
+  document.getElementById('ftRev').textContent  = sum('total_revistas');
+  document.getElementById('ftOfe').textContent  = fmtMoeda(data.por_turma.reduce((s, t) => s + parseFloat(t.valor_ofertas || 0), 0));
 
   document.getElementById('resumo').style.display = 'block';
 }
 
-// ── Confirmar Fechamento ──
-
 async function confirmarFechamento() {
-  if (!domingoIdAtual) {
-    mostrarMsg('Carregue o resumo de um domingo antes de confirmar.', 'info');
-    return;
-  }
-
-  const observacoes = document.getElementById('obsInput').value.trim() || null;
-
+  if (!domingoIdAtual) { mostrarMsg('Carregue o resumo de um domingo antes de confirmar.', 'info'); return; }
+  const obs = document.getElementById('obsInput')?.value.trim() || null;
   try {
     const resp = await fetch('/api/fechamento/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ..._authHeader() },
-      body: JSON.stringify({ domingo_id: domingoIdAtual, observacoes }),
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ domingo_id: domingoIdAtual, observacoes: obs }),
     });
-    if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.detail || 'Erro ao confirmar');
-    }
-    const result = await resp.json();
-    mostrarMsg(`✅ Fechamento confirmado para ${result.turmas_fechadas} turma(s)!`, 'success');
-    await carregarResumo(); // recarrega para refletir os dados salvos
-  } catch (e) {
-    console.error('[confirmarFechamento]', e);
-    mostrarMsg('Erro: ' + e.message, 'danger');
-  }
+    if (!resp.ok) throw new Error((await resp.json()).detail || 'Erro');
+    const r = await resp.json();
+    mostrarMsg(`Fechamento confirmado para ${r.turmas_fechadas} turma(s)!`, 'success');
+    await carregarResumo();
+  } catch (e) { mostrarMsg('Erro: ' + e.message, 'danger'); }
 }
 
-// ── Helpers ──
-
-function esc(s) {
-  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtMoeda(v) { const n = parseFloat(v||0); return 'R$ ' + n.toFixed(2).replace('.',','); }
+function mostrarMsg(txt, tipo) {
+  const el = document.getElementById('msg');
+  el.textContent = txt; el.className = 'alert alert-' + tipo; el.style.display = 'block';
+  if (tipo !== 'danger') setTimeout(() => { el.style.display = 'none'; }, 5000);
 }
-
-function mostrarMsg(texto, tipo) {
-  const m = document.getElementById('msg');
-  m.textContent = texto;
-  m.className = 'alert alert-' + tipo;
-  m.style.display = 'block';
-  if (tipo !== 'danger') setTimeout(() => { m.style.display = 'none'; }, 6000);
-}
-
-function esconderMsg() {
-  document.getElementById('msg').style.display = 'none';
-}
+function esconderMsg() { document.getElementById('msg').style.display = 'none'; }
 </script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
 </body>
 </html>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Fundo arredondado -->
+  <rect width="512" height="512" rx="96" fill="#4f46e5"/>
+  <!-- Cruz -->
+  <rect x="236" y="100" width="40" height="220" rx="12" fill="white"/>
+  <rect x="156" y="168" width="200" height="40" rx="12" fill="white"/>
+  <!-- Base/arco da igreja -->
+  <path d="M140 340 Q256 280 372 340 L372 400 Q256 360 140 400 Z" fill="rgba(255,255,255,0.9)"/>
+  <rect x="224" y="370" width="64" height="80" rx="32" fill="rgba(255,255,255,0.9)"/>
+</svg>
