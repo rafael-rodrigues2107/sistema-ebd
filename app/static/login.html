@@ -9,14 +9,15 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="EBD">
+<script src="/static/marca.js?v=1"></script>
 <link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icons/icon-192.png">
-<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/marca/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/marca/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --primary: #4f46e5;
+    --primary: #4f46e5; --primary-rgb: 79,70,229;
     --primary-dark: #4338ca;
     --primary-light: #ede9fe;
     --danger: #ef4444;
@@ -38,7 +39,7 @@
     align-items: center;
     justify-content: center;
     padding: 24px;
-    background-image: radial-gradient(ellipse at 60% 10%, rgba(79,70,229,.08) 0%, transparent 60%);
+    background-image: radial-gradient(ellipse at 60% 10%, rgba(var(--primary-rgb),.08) 0%, transparent 60%);
   }
   .card {
     background: var(--surface);
@@ -102,7 +103,7 @@
   .field input:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb),.12);
   }
   .btn-login {
     width: 100%;
@@ -163,8 +164,8 @@
 <body>
 <div class="card">
   <div class="brand">
-    <div class="brand-icon">⛪</div>
-    <h1>Sistema EBD</h1>
+    <div class="brand-icon" data-marca="logo">⛪</div>
+    <h1 data-marca="nome-igreja">Sistema EBD</h1>
     <p>Escola Bíblica Dominical</p>
   </div>
 
@@ -185,7 +186,7 @@
   </button>
 
   <div class="divider"></div>
-  <p class="version">Sistema EBD &middot; v1.0</p>
+  <p class="version"><span data-marca="nome-igreja">Sistema EBD</span> &middot; v1.0</p>
 </div>
 
 <script>

@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "sqlite+aiosqlite:///./ebd.db"
 
+    # Arquivos enviados (logo da igreja e ícones gerados). Em produção: /data/uploads
+    uploads_dir: str = "./uploads"
+
     # App
     app_name: str = "Sistema EBD"
     debug: bool = True

@@ -1,15 +1,13 @@
-const CACHE = 'ebd-v3';
+const CACHE = 'ebd-v4';
 const STATIC = [
   '/static/sessao.js?v=1',
+  '/static/marca.js?v=1',
   '/login.html',
   '/chamada.html',
   '/dashboard.html',
   '/fechamento.html',
   '/cadastro.html',
   '/aluno.html',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap',
 ];
 
@@ -38,6 +36,20 @@ self.addEventListener('fetch', e => {
         headers: { 'Content-Type': 'application/json' }
       })
     ));
+    return;
+  }
+
+  // Identidade da igreja (manifesto, logo/ícones, config): network-first para o logo novo aparecer logo
+  if (url.pathname === '/manifest.json' || url.pathname.startsWith('/marca/')) {
+    e.respondWith(
+      fetch(e.request).then(resp => {
+        if (resp.ok) {
+          const clone = resp.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return resp;
+      }).catch(() => caches.match(e.request))
+    );
     return;
   }
 

@@ -42,3 +42,7 @@ paR6QWAP7o*
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Testes locais
+testes/teste_uploads/
+uploads/

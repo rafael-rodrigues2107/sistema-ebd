@@ -16,13 +16,14 @@ from database import init_db
 from routers.alunos import router as alunos_router
 from routers.auth import auth_router, usuarios_router
 from routers.chamadas import router as chamadas_router
+from routers.config_igreja import router as config_igreja_router
 from routers.dashboard import router as dashboard_router
 from routers.fechamento import router as fechamento_router
 from routers.matriculas import router as matriculas_router
 from routers.trimestres import router as trimestres_router
 from routers.trocas import router as trocas_router
 from routers.turmas import router as turmas_router
-from seed import seed as executar_seed, seed_admin
+from seed import seed_admin
 
 
 @asynccontextmanager
@@ -38,6 +39,10 @@ app = FastAPI(
     version="0.1.0",
     debug=settings.debug,
     lifespan=lifespan,
+    # Documentação automática da API só em desenvolvimento
+    docs_url="/docs" if settings.debug else None,
+    redoc_url="/redoc" if settings.debug else None,
+    openapi_url="/openapi.json" if settings.debug else None,
 )
 
 # ── Routers da API ──
@@ -51,19 +56,13 @@ app.include_router(dashboard_router)
 app.include_router(auth_router)
 app.include_router(usuarios_router)
 app.include_router(trocas_router)
+app.include_router(config_igreja_router)
 
 # ── Arquivos estáticos (frontend) ──
 static_dir = Path(__file__).parent / "static"
 static_dir.mkdir(exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 app.mount("/icons", StaticFiles(directory=str(static_dir / "icons")), name="icons")
-
-
-@app.post("/api/seed", tags=["Seed"])
-async def seed_endpoint():
-    """Popula o banco com dados de exemplo (idempotente)."""
-    await executar_seed()
-    return {"ok": True, "message": "Seed executado com sucesso"}
 
 
 @app.get("/")
@@ -94,11 +93,6 @@ async def login_page():
 @app.get("/aluno.html")
 async def aluno_page():
     return FileResponse(static_dir / "aluno.html")
-
-
-@app.get("/manifest.json")
-async def manifest():
-    return FileResponse(static_dir / "manifest.json", media_type="application/manifest+json")
 
 
 @app.get("/sw.js")

@@ -422,3 +422,25 @@ class SolicitacaoTroca(Base):
 
     def __repr__(self) -> str:
         return f"<SolicitacaoTroca aluno={self.aluno_id} {self.turma_origem_id}->{self.turma_destino_id} {self.status}>"
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 13. Configuração da Igreja (identidade visual)
+# ═════════════════════════════════════════════════════════════════════════════
+class ConfiguracaoIgreja(Base):
+    """
+    Identidade visual da instalação: nome, nome do app, cor e logo.
+    Linha única (id=1); sem linha, valem os padrões do sistema.
+    """
+
+    __tablename__ = "configuracao_igreja"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    nome_igreja: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    nome_app: Mapped[Optional[str]] = mapped_column(String(15), nullable=True)
+    cor_primaria: Mapped[Optional[str]] = mapped_column(String(7), nullable=True, comment="#rrggbb")
+    logo_versao: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True,
+        comment="Muda a cada upload (cache dos ícones); nulo = sem logo"
+    )
+    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)

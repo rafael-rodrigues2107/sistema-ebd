@@ -9,14 +9,15 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="EBD">
+<script src="/static/marca.js?v=1"></script>
 <link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icons/icon-192.png">
-<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/marca/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/marca/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --primary: #4f46e5; --primary-dark: #4338ca; --primary-light: #ede9fe; --primary-muted: #a5b4fc;
+    --primary: #4f46e5; --primary-rgb: 79,70,229; --primary-dark: #4338ca; --primary-light: #ede9fe; --primary-muted: #a5b4fc;
     --success: #10b981; --success-light: #d1fae5; --success-dark: #059669;
     --danger: #ef4444; --danger-light: #fee2e2;
     --warning: #f59e0b; --warning-light: #fef3c7;
@@ -57,7 +58,7 @@
   .tabs-bar { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 5px; margin-bottom: 24px; box-shadow: var(--shadow-sm); overflow-x: auto; }
   .tab-btn { display: flex; align-items: center; gap: 7px; padding: 9px 16px; border: none; border-radius: 9px; font-size: .85rem; font-weight: 600; font-family: inherit; color: var(--text-muted); background: transparent; cursor: pointer; transition: .15s; white-space: nowrap; flex-shrink: 0; }
   .tab-btn:hover { background: var(--bg); color: var(--text); }
-  .tab-btn.active { background: var(--primary); color: #fff; box-shadow: 0 2px 8px rgba(79,70,229,.3); }
+  .tab-btn.active { background: var(--primary); color: #fff; box-shadow: 0 2px 8px rgba(var(--primary-rgb),.3); }
   .tab-btn .tab-icon { font-size: 1rem; }
   .tab-count { background: rgba(255,255,255,.25); color: inherit; padding: 1px 7px; border-radius: 10px; font-size: .72rem; font-weight: 800; }
   .tab-btn:not(.active) .tab-count { background: var(--bg); color: var(--text-muted); }
@@ -82,7 +83,7 @@
     transition: border-color .15s, box-shadow .15s;
   }
   .field select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; cursor: pointer; }
-  .field input:focus, .field select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(var(--primary-rgb),.1); }
   .field input::placeholder { color: var(--text-subtle); }
   .field-check { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; cursor: pointer; }
   .field-check input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
@@ -93,8 +94,8 @@
   /* Buttons */
   .btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 20px; border: none; border-radius: var(--radius-sm); font-size: .875rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: all .15s; }
   .btn:active { transform: scale(.98); }
-  .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 1px 4px rgba(79,70,229,.25); }
-  .btn-primary:hover:not(:disabled) { background: var(--primary-dark); box-shadow: 0 3px 10px rgba(79,70,229,.35); }
+  .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 1px 4px rgba(var(--primary-rgb),.25); }
+  .btn-primary:hover:not(:disabled) { background: var(--primary-dark); box-shadow: 0 3px 10px rgba(var(--primary-rgb),.35); }
   .btn-primary:disabled { background: var(--primary-muted); cursor: not-allowed; box-shadow: none; transform: none; }
   .btn-ghost { background: var(--bg); color: var(--text-muted); border: 1.5px solid var(--border); }
   .btn-ghost:hover { background: var(--border); color: var(--text); }
@@ -164,7 +165,7 @@
 <body>
 
 <nav class="navbar">
-  <a class="nav-brand" href="/"><div class="nav-logo">⛪</div><span>EBD</span></a>
+  <a class="nav-brand" href="/"><div class="nav-logo" data-marca="logo">⛪</div><span data-marca="nome-app">EBD</span></a>
   <div class="nav-links">
     <a href="/" class="nav-link">Chamada</a>
     <a href="/fechamento.html" class="nav-link">Fechamento</a>
@@ -211,6 +212,9 @@
     <button class="tab-btn" onclick="abrirAba('trocas')" id="tab-trocas" role="tab">
       <span class="tab-icon">🔁</span> Solicitações
       <span class="tab-count" id="cnt-trocas">—</span>
+    </button>
+    <button class="tab-btn" onclick="abrirAba('igreja')" id="tab-igreja" role="tab">
+      <span class="tab-icon">⛪</span> Igreja
     </button>
   </div>
 
@@ -457,6 +461,66 @@
     </div>
   </div>
 
+  <!-- ── ABA IGREJA (identidade visual) ── -->
+  <div class="tab-panel" id="panel-igreja">
+    <div id="msg-igreja" class="alert"></div>
+    <div class="form-list-grid">
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Identidade da Igreja</div>
+            <div class="card-subtitle">Nome, cor e logo aparecem no login, no menu, nas impressões e no ícone do app.</div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="cfgNomeIgreja">Nome da igreja</label>
+          <input type="text" id="cfgNomeIgreja" maxlength="120" placeholder="Ex.: Igreja Batista Central" oninput="cfgPrevia()">
+        </div>
+        <div class="field">
+          <label for="cfgNomeApp">Nome do app (máx. 15 letras)</label>
+          <input type="text" id="cfgNomeApp" maxlength="15" placeholder="Ex.: EBD Central" oninput="cfgPrevia()">
+        </div>
+        <div class="field">
+          <label for="cfgCor">Cor principal</label>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input type="color" id="cfgCor" value="#4f46e5" oninput="cfgPrevia()" style="width:56px;height:40px;padding:2px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer;">
+            <span id="cfgCorTxt" style="font-weight:600;color:var(--text-muted);font-size:.85rem;">#4f46e5</span>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="btnSalvarCfg" onclick="salvarConfigIgreja()">Salvar</button>
+      </div>
+
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Logo</div>
+            <div class="card-subtitle">PNG, JPG ou WEBP, até 5 MB. Use uma imagem quadrada ou com fundo transparente, de pelo menos 256×256.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-bottom:16px;">
+          <div>
+            <div style="font-size:.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Ícone do app</div>
+            <div id="prevIcone" style="width:76px;height:76px;border-radius:18px;background:#fff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:2.2rem;overflow:hidden;box-shadow:var(--shadow-sm);">⛪</div>
+          </div>
+          <div style="flex:1;min-width:170px;">
+            <div style="font-size:.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Barra do app</div>
+            <div id="prevBarra" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--primary);">
+              <span id="prevBarraLogo" style="width:26px;height:26px;border-radius:7px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden;">⛪</span>
+              <strong id="prevBarraNome" style="font-size:.9rem;">EBD</strong>
+              <span id="prevBotao" style="margin-left:auto;padding:3px 10px;border-radius:7px;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;">Botão</span>
+            </div>
+          </div>
+        </div>
+        <input type="file" id="cfgLogoArq" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="enviarLogoIgreja(this)">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="btnEnviarLogo" onclick="document.getElementById('cfgLogoArq').click()">Enviar logo</button>
+          <button class="btn btn-danger" id="btnRemoverLogo" onclick="removerLogoIgreja()" style="display:none;">Remover logo</button>
+        </div>
+        <div class="card-subtitle" style="margin-top:12px;">Depois de trocar o logo, quem já instalou o app pode precisar reinstalar para ver o novo ícone na tela inicial.</div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script src="/static/sessao.js?v=1"></script>
@@ -501,7 +565,99 @@ document.addEventListener('DOMContentLoaded', () => {
   popularSelectTurmasUsuario();
   carregarUsuarios();
   carregarTrocas();
+  carregarConfigIgreja();
 });
+
+// ── IGREJA (identidade visual) ──
+function erroApi(e, padrao) {
+  if (Array.isArray(e.detail)) return e.detail.map(d => (d.msg || '').replace(/^Value error, /, '')).join(' ');
+  return e.detail || padrao;
+}
+
+function pintarLogo(el, url, emoji) {
+  el.textContent = '';
+  if (!url) { el.textContent = emoji; return; }
+  const img = document.createElement('img');
+  img.src = url; img.alt = '';
+  img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block';
+  el.appendChild(img);
+}
+
+function cfgPrevia() {
+  const cor = document.getElementById('cfgCor').value;
+  document.getElementById('cfgCorTxt').textContent = cor;
+  document.getElementById('prevBarraNome').textContent = document.getElementById('cfgNomeApp').value || 'EBD';
+  document.getElementById('prevBarra').style.borderTopColor = cor;
+  document.getElementById('prevBotao').style.background = cor;
+}
+
+function preencherConfig(c) {
+  document.getElementById('cfgNomeIgreja').value = c.nome_igreja;
+  document.getElementById('cfgNomeApp').value = c.nome_app;
+  document.getElementById('cfgCor').value = c.cor_primaria;
+  pintarLogo(document.getElementById('prevIcone'), c.logo_url, '⛪');
+  pintarLogo(document.getElementById('prevBarraLogo'), c.logo_url, '⛪');
+  document.getElementById('btnRemoverLogo').style.display = c.logo_url ? '' : 'none';
+  cfgPrevia();
+}
+
+async function carregarConfigIgreja() {
+  try {
+    const resp = await fetch('/api/config', { credentials: 'include' });
+    preencherConfig(await resp.json());
+  } catch { mostrarMsg('igreja', 'Não foi possível carregar as configurações.', 'danger'); }
+}
+
+async function salvarConfigIgreja() {
+  const btn = document.getElementById('btnSalvarCfg');
+  btn.disabled = true;
+  try {
+    const resp = await fetch('/api/config', {
+      method: 'PUT', headers: {'Content-Type':'application/json'}, credentials: 'include',
+      body: JSON.stringify({
+        nome_igreja: document.getElementById('cfgNomeIgreja').value,
+        nome_app: document.getElementById('cfgNomeApp').value,
+        cor_primaria: document.getElementById('cfgCor').value,
+      }),
+    });
+    if (!resp.ok) throw new Error(erroApi(await resp.json(), 'Erro ao salvar'));
+    const c = await resp.json();
+    preencherConfig(c); atualizarMarca(c);
+    mostrarMsg('igreja', 'Configurações salvas.', 'success');
+  } catch (e) { mostrarMsg('igreja', 'Erro: ' + e.message, 'danger'); }
+  btn.disabled = false;
+}
+
+async function enviarLogoIgreja(input) {
+  const arq = input.files[0];
+  input.value = '';
+  if (!arq) return;
+  if (arq.size > 5 * 1024 * 1024) { mostrarMsg('igreja', 'Imagem maior que 5 MB. Envie um arquivo menor.', 'danger'); return; }
+  const btn = document.getElementById('btnEnviarLogo');
+  btn.disabled = true;
+  try {
+    const fd = new FormData();
+    fd.append('arquivo', arq);
+    const resp = await fetch('/api/config/logo', { method: 'POST', credentials: 'include', body: fd });
+    if (!resp.ok) throw new Error(erroApi(await resp.json(), 'Erro ao enviar'));
+    const c = await resp.json();
+    preencherConfig(c); atualizarMarca(c);
+    mostrarMsg('igreja', 'Logo atualizado e ícones do app gerados.', 'success');
+  } catch (e) { mostrarMsg('igreja', 'Erro: ' + e.message, 'danger'); }
+  btn.disabled = false;
+}
+
+async function removerLogoIgreja() {
+  if (!confirm('Remover o logo e voltar ao ícone padrão?')) return;
+  try {
+    const resp = await fetch('/api/config/logo', { method: 'DELETE', credentials: 'include' });
+    if (!resp.ok) throw new Error(erroApi(await resp.json(), 'Erro ao remover'));
+    const c = await resp.json();
+    preencherConfig(c); atualizarMarca(c);
+    mostrarMsg('igreja', 'Logo removido.', 'success');
+  } catch (e) { mostrarMsg('igreja', 'Erro: ' + e.message, 'danger'); }
+}
+
 
 // ── TURMAS ──
 async function carregarTurmas() {
