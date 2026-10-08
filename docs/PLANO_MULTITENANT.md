@@ -7,15 +7,18 @@ cerca de 150 pontos de consulta ao banco, `create_all` no startup (sem migration
 ## Andamento
 - Fase 0 (segurança da VPS e backup): feita em 07/out/2026.
 - Fase 1 (Postgres): feita em 08/out/2026. Produção roda em Postgres.
-- Fase 2 (estrutura multi-igreja): código e testes prontos (migration `0002`, tabela `igrejas`, `igreja_id` em todas as
-  tabelas, unicidades por igreja). **Ainda não está em produção** (ver "Colocar a fase 2 em produção").
-  O app continua funcionando como uma igreja só: todo dado novo cai na igreja 1 (padrão `1`). Nada muda para quem usa.
-- Fase 3 (RLS e isolamento): código e testes prontos (migration `0003`, papel `ebd_app` sem bypass, `app.igreja_id`
-  por transação, gatilhos contra referência entre igrejas, igreja pelo Host). **Ainda não está em produção.**
-- Fases 4 a 6: pendentes. (Da fase 4 já veio o essencial: igreja pelo domínio e configuração por igreja. Faltam
-  JWT com igreja, certificado curinga, uploads/marca por igreja.)
+- Fase 2 (estrutura multi-igreja): feita em 08/out/2026 e **em produção** (migration `0002`, tabela `igrejas`, `igreja_id` em
+  todas as tabelas, unicidades por igreja).
+- Fase 3 (RLS e isolamento): feita em 08/out/2026 e **em produção** (migration `0003`, papel `ebd_app` sem bypass, `app.igreja_id`
+  por transação, gatilhos contra referência entre igrejas, igreja pelo Host). Hoje existe uma igreja só (id 1).
+- Fase 4 (subdomínio, login e marca por igreja): código e testes prontos, **ainda não em produção**: JWT com a igreja,
+  logo/ícones/manifest/uploads por igreja (`uploads/<igreja_id>/`), login com filtro explícito pela igreja, e o proxy HTTPS
+  trocado de nginx+certbot para **Caddy** com certificado automático por domínio de igreja (roteiro em `docs/VIRADA_CADDY.md`).
+  Depende de um registro DNS curinga (`*.minhaebd.cloud`) no painel da Hostinger para os subdomínios.
+- Fases 5 e 6: pendentes (painel do dono para criar/suspender igrejas; backup por igreja e LGPD).
+- Observação: o SQLite não isola igrejas (não tem RLS). O app recusa subir em SQLite com mais de uma igreja.
 
-### Colocar a fase 2 em produção
+### Como a fase 2 foi colocada em produção (histórico)
 A migration roda sozinha quando o app sobe (`entrypoint.sh` -> `alembic upgrade head`) e leva segundos.
 1. Backup manual antes: `/usr/local/sbin/ebd-backup.sh` (confirmar `backup ok (postgres)`).
 2. `cd /opt/sistema-ebd && git pull --ff-only`
@@ -25,7 +28,7 @@ A migration roda sozinha quando o app sobe (`entrypoint.sh` -> `alembic upgrade 
 Voltar atrás: `alembic downgrade 0001` (dentro do container do app) e voltar o código anterior. Só é possível enquanto
 não existir segunda igreja com nomes repetidos.
 
-### Colocar a fase 3 em produção
+### Como a fase 3 foi colocada em produção (histórico)
 Muda o papel de banco do app, então exige variáveis novas e um deploy mais cuidadoso que o da fase 2.
 1. No servidor, em `/opt/sistema-ebd/.env.prod`, acrescentar `APP_DB_PASSWORD=<openssl rand -hex 24>` (só letras e números; nunca versionar).
 2. Backup manual: `/usr/local/sbin/ebd-backup.sh` (confirmar `backup ok (postgres)`).

@@ -47,13 +47,12 @@ def verificar_senha(senha: str, hash_: str) -> bool:
         return False
 
 
-def criar_token(user_id: int, role: str) -> str:
+def criar_token(user_id: int, role: str, igreja_id: Optional[int] = None) -> str:
     expire = datetime.utcnow() + timedelta(hours=TOKEN_EXPIRE_HOURS)
-    return jwt.encode(
-        {"sub": str(user_id), "role": role, "exp": expire},
-        settings.secret_key,
-        algorithm=ALGORITHM,
-    )
+    claims = {"sub": str(user_id), "role": role, "exp": expire}
+    if igreja_id is not None:
+        claims["ig"] = igreja_id  # igreja que emitiu o token (conferida a cada requisição)
+    return jwt.encode(claims, settings.secret_key, algorithm=ALGORITHM)
 
 
 def _extrair_token(request: Request) -> Optional[str]:
@@ -80,6 +79,11 @@ async def get_current_user(
         if not user_id:
             raise _401
     except JWTError:
+        raise _401
+    # Token de outra igreja nunca vale (o RLS já esconderia o usuário; aqui é a segunda trava).
+    # Tokens emitidos antes da fase 4 não têm "ig" e continuam valendo até expirarem (8 h).
+    igreja_do_token = payload.get("ig")
+    if igreja_do_token is not None and igreja_do_token != getattr(request.state, "igreja_id", None):
         raise _401
     user = await session.get(Usuario, int(user_id))
     if not user or not user.ativo:
@@ -126,12 +130,15 @@ usuarios_router = APIRouter(prefix="/api/usuarios", tags=["Usuários"])
 
 @auth_router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest, request: Request, response: Response, session: AsyncSession = Depends(get_session)):
-    result = await session.execute(select(Usuario).where(Usuario.username == body.username))
+    igreja_id = getattr(request.state, "igreja_id", None)
+    result = await session.execute(
+        select(Usuario).where(Usuario.username == body.username, Usuario.igreja_id == igreja_id)
+    )  # filtro explícito além do RLS: o login é a consulta mais sensível
     user = result.scalar_one_or_none()
     if not user or not verificar_senha(body.senha, user.senha_hash) or not user.ativo:
         raise HTTPException(status_code=401, detail="Usuário ou senha incorretos")
 
-    token = criar_token(user.id, user.role)
+    token = criar_token(user.id, user.role, getattr(request.state, "igreja_id", None))
     is_secure = request.url.scheme == "https"
     _set_auth_cookie(response, token, is_secure)
 

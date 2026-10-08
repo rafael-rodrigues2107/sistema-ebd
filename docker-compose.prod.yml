@@ -39,32 +39,18 @@ services:
     networks:
       - ebd_net
 
-  nginx:
-    image: nginx:alpine
+  caddy:
+    image: caddy:2-alpine
     restart: always
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
-      - certbot_www:/var/www/certbot:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data      # certificados e chaves (NÃO apagar: refazer tudo bate no limite do Let's Encrypt)
+      - caddy_config:/config
     depends_on:
       - app
-    networks:
-      - ebd_net
-
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - certbot_www:/var/www/certbot
-      - certbot_certs:/etc/letsencrypt
-    entrypoint: >
-      sh -c "trap exit TERM;
-             while :; do
-               certbot renew --webroot -w /var/www/certbot --quiet;
-               sleep 12h & wait $${!};
-             done"
     networks:
       - ebd_net
 
@@ -75,5 +61,5 @@ networks:
 volumes:
   pg_ebd:
   ebd_data:
-  certbot_www:
-  certbot_certs:
+  caddy_data:
+  caddy_config:

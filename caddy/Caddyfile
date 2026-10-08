@@ -1,0 +1,46 @@
+# Proxy HTTPS do Sistema EBD (substitui o nginx + certbot).
+# Cada igreja (subdomínio ou domínio próprio) recebe certificado do Let's Encrypt automaticamente na
+# primeira visita, mas só se o app confirmar que o domínio é de uma igreja ativa (`ask`). Renovação automática.
+{
+	email rafael.2107.rrds@gmail.com
+	on_demand_tls {
+		ask http://app:8000/interno/dominio-permitido
+	}
+}
+
+# HTTP: o Caddy responde sozinho os desafios do Let's Encrypt; o resto vai para HTTPS
+http:// {
+	redir https://{host}{uri} permanent
+}
+
+https:// {
+	tls {
+		on_demand
+	}
+
+	encode gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+	}
+
+	# rotas internas (validação de domínio) nunca saem para a internet
+	@interno path /interno/*
+	respond @interno 404
+
+	# HTML e service worker nunca ficam em cache
+	@sem_cache path / /sw.js /*.html
+	header @sem_cache Cache-Control "no-store, no-cache, must-revalidate"
+	header @sem_cache Pragma "no-cache"
+
+	# logo de até 5 MB (o app valida; o nginx antigo cortava em 1 MB)
+	request_body {
+		max_size 6MB
+	}
+
+	reverse_proxy app:8000 {
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+}

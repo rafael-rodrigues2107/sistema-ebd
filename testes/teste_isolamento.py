@@ -245,7 +245,8 @@ async def parte2():
         check("igreja 2 não consegue matricular aluno da igreja 1", r.status_code >= 400)
 
         # token de uma igreja não vale na outra
-        token1 = c1.cookies.get("access_token")
+        token1 = c1.cookies.get("ebd_session")
+        assert token1, "o login deveria ter criado o cookie ebd_session"
         outro = cliente("igrejab.test")
         r = outro.get("/api/auth/me", headers={"Authorization": f"Bearer {token1}"})
         check("token da igreja 1 usado no domínio da igreja 2 não autentica", r.status_code == 401)

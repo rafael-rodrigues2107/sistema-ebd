@@ -7,10 +7,11 @@ Entry point: uvicorn main:app --reload
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 
+import armazenamento
 from config import settings
 from database import init_db
 from routers.alunos import router as alunos_router
@@ -34,6 +35,7 @@ async def lifespan(_app: FastAPI):
     # Alembic (entrypoint.sh roda `alembic upgrade head` antes de subir o app).
     if settings.database_url.startswith("sqlite"):
         await init_db()
+    armazenamento.migrar_arquivos_legados()
     await garantir_igreja_padrao()
     await seed_admin()
     yield
@@ -53,8 +55,8 @@ app = FastAPI(
 @app.middleware("http")
 async def identificar_igreja(request: Request, call_next):
     """Descobre a igreja pelo Host. Sem igreja não há dado nem página: 404 (ou 403 se suspensa)."""
-    if request.url.path == "/healthz":
-        return await call_next(request)
+    if request.url.path == "/healthz" or request.url.path.startswith("/interno/"):
+        return await call_next(request)  # rotas de infraestrutura: não dependem da igreja
     igreja_id = await resolver_igreja(request.headers.get("host", ""))
     if igreja_id == SUSPENSA:
         return JSONResponse({"detail": "Esta igreja está com o acesso suspenso."}, status_code=403)
@@ -69,6 +71,17 @@ async def identificar_igreja(request: Request, call_next):
 @app.get("/healthz", include_in_schema=False)
 async def healthz():
     return {"status": "ok"}
+
+
+@app.get("/interno/dominio-permitido", include_in_schema=False)
+async def dominio_permitido(domain: str = ""):
+    """O Caddy pergunta aqui antes de emitir certificado HTTPS para um domínio novo (on-demand TLS).
+    200 só para domínio de igreja ATIVA. Só é alcançável pela rede interna do Docker: o Caddy bloqueia
+    /interno/* para quem vem de fora."""
+    igreja_id = await resolver_igreja(domain)
+    if not igreja_id:  # None (desconhecido) ou 0 (suspensa)
+        raise HTTPException(404)
+    return {"ok": True}
 
 
 # ── Routers da API ──

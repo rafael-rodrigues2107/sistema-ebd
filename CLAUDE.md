@@ -63,9 +63,9 @@ Sistema de chamada e gestão da Escola Bíblica Dominical: chamada pelos profess
 - Já existe a tela "Configurações da Igreja" (nome, nome curto do app, logo com upload e cor principal), com ícones do PWA
   gerados a partir do logo e arquivos guardados no volume `/data`.
 - Próximo: multi-igreja numa única VPS e um único Postgres (coluna `igreja_id` + RLS, igreja pelo domínio).
-  Plano e fases em `docs/PLANO_MULTITENANT.md`. Em produção: fases 0 (segurança), 1 (Postgres) e 2 (tabela `igrejas` e
-  `igreja_id` em todas as tabelas, migration `0002`, desde 08/out/2026). A fase 3 (RLS/isolamento, migration `0003`) está no
-  código, **mas só vale em produção depois do deploy** (passos no plano, exige `APP_DB_PASSWORD` no `.env.prod`).
+  Plano e fases em `docs/PLANO_MULTITENANT.md`. **Em produção desde 08/out/2026:** fase 0 (segurança), fase 1 (Postgres),
+  fase 2 (tabela `igrejas` e `igreja_id` em todas as tabelas, migration `0002`) e fase 3 (RLS/isolamento, migration `0003`,
+  papel `ebd_app`; o `.env.prod` tem `APP_DB_PASSWORD`). Hoje há uma igreja só (id 1, `minhaebd.cloud`), mas o isolamento já vale.
   Faltam: JWT com igreja, certificado curinga, marca/uploads por igreja, painel do dono, LGPD.
 
 ## Multi-igreja (como funciona no código)

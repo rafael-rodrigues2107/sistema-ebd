@@ -6,6 +6,7 @@ import _banco
 
 DB = Path(__file__).parent / f"teste_config_{secrets.token_hex(3)}.db"
 UPLOADS = tempfile.mkdtemp(prefix="ebd_uploads_")
+PASTA = Path(UPLOADS) / "1"  # desde a fase 4 os arquivos ficam em uploads/<igreja_id>/ (aqui: igreja 1)
 os.environ.update(DATABASE_URL=_banco.url(DB), ADMIN_INITIAL_PASSWORD=_banco.SENHA_ADMIN, DEBUG="false",
                   SECRET_KEY=secrets.token_hex(16), UPLOADS_DIR=UPLOADS)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
@@ -97,7 +98,7 @@ try:
             check(f"{arq} gerado {lado}x{lado}", r.status_code == 200 and im.size == (lado, lado), str(im.size))
         check("apple-touch-icon sem transparência", Image.open(io.BytesIO(anon.get("/marca/apple-touch-icon.png").content)).mode == "RGB")
         check("logo.png servido", anon.get("/marca/logo.png").status_code == 200)
-        check("arquivos gravados no volume", {p.name for p in Path(UPLOADS).glob("*.png")} >= set(tamanhos) | {"logo.png"})
+        check("arquivos gravados no volume", {p.name for p in PASTA.glob("*.png")} >= set(tamanhos) | {"logo.png"})
         check("manifest versionado pelo logo", f"v={c['versao']}" in anon.get("/manifest.json").json()["icons"][0]["src"])
 
         print("== Logo transparente e logo claro")
@@ -113,7 +114,7 @@ try:
         check("logo retangular cabe inteiro no ícone", im.size == (512, 512) and im.getpixel((256, 256))[3] == 255)
 
         print("== Uploads inválidos")
-        n = len(list(Path(UPLOADS).iterdir())); v = anon.get("/api/config").json()["versao"]
+        n = len(list(PASTA.iterdir())); v = anon.get("/api/config").json()["versao"]
         r = envia(adm, b"isto nao e uma imagem", "logo.png")
         check("texto com extensão .png: 400", r.status_code == 400, r.text[:100])
         r = envia(adm, b"%PDF-1.4 fake", "logo.pdf", "application/pdf")
@@ -126,12 +127,12 @@ try:
         check("arquivo > 5 MB: 413", r.status_code == 413, str(r.status_code))
         r = adm.post("/api/config/logo")
         check("sem arquivo: 422", r.status_code == 422)
-        check("rejeições não mexeram nos arquivos nem na versão", len(list(Path(UPLOADS).iterdir())) == n and anon.get("/api/config").json()["versao"] == v)
+        check("rejeições não mexeram nos arquivos nem na versão", len(list(PASTA.iterdir())) == n and anon.get("/api/config").json()["versao"] == v)
 
         print("== Remover logo")
         r = adm.delete("/api/config/logo")
         check("remover: 200 e sem logo_url", r.status_code == 200 and r.json()["logo_url"] is None, r.text)
-        check("arquivos apagados do volume", not list(Path(UPLOADS).glob("*.png")))
+        check("arquivos apagados do volume", not list(PASTA.glob("*.png")))
         check("logo.png volta a 404", anon.get("/marca/logo.png").status_code == 404)
         r = anon.get("/marca/icon-192.png")
         check("ícone volta ao padrão", r.status_code == 200 and Image.open(io.BytesIO(r.content)).size == (192, 192))

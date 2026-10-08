@@ -11,7 +11,7 @@ import secrets
 from datetime import date, timedelta
 
 import bcrypt as _bcrypt
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from config import settings
 from database import _async_session_factory, sessao_da_igreja
@@ -183,6 +183,12 @@ async def garantir_igreja_padrao() -> None:
         if await session.get(Igreja, 1) is None:
             session.add(Igreja(id=1, nome="Igreja principal"))
             await session.commit()
+        total = await session.scalar(select(func.count()).select_from(Igreja))
+        if total > 1:
+            raise RuntimeError(
+                "O SQLite não isola igrejas (não tem RLS): com mais de uma igreja use PostgreSQL. "
+                "SQLite é só para desenvolvimento, testes e instalação de uma igreja só."
+            )
 
 
 async def seed_admin() -> None:
