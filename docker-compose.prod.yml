@@ -1,9 +1,27 @@
 services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: ebd
+      POSTGRES_USER: ebd
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pg_ebd:/var/lib/postgresql/data
+    # sem "ports": o banco só é alcançável pelos containers da rede ebd_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ebd -d ebd"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ebd_net
+
   app:
     build: .
     restart: always
     environment:
-      DATABASE_URL: sqlite+aiosqlite:////data/ebd.db
+      DATABASE_URL: postgresql+asyncpg://ebd:${POSTGRES_PASSWORD}@db:5432/ebd
       DEBUG: "false"
       SECRET_KEY: ${SECRET_KEY}
       UPLOADS_DIR: /data/uploads
@@ -11,6 +29,9 @@ services:
       - ebd_data:/data
     expose:
       - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - ebd_net
 
@@ -48,6 +69,7 @@ networks:
     driver: bridge
 
 volumes:
+  pg_ebd:
   ebd_data:
   certbot_www:
   certbot_certs:

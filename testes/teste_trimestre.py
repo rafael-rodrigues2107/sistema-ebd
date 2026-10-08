@@ -1,11 +1,13 @@
 """Teste local do 'Gerar próximo trimestre' — banco SQLite temporário."""
-import os, secrets, sqlite3, sys
+import os, secrets, sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _banco
 
 DB = Path(__file__).parent / f"teste_trim_{secrets.token_hex(3)}.db"
-os.environ.update(DATABASE_URL=f"sqlite+aiosqlite:///{DB.as_posix()}", DEBUG="false", SECRET_KEY=secrets.token_hex(16))
-sys.path.insert(0, r"C:\dev\sistema-ebd\app")
-os.chdir(r"C:\dev\sistema-ebd\app")
+os.environ.update(DATABASE_URL=_banco.url(DB), ADMIN_INITIAL_PASSWORD=_banco.SENHA_ADMIN, DEBUG="false", SECRET_KEY=secrets.token_hex(16))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
+os.chdir(str(Path(__file__).resolve().parent.parent / "app"))
 
 from fastapi.testclient import TestClient
 from main import app
@@ -34,7 +36,7 @@ with TestClient(app) as adm, TestClient(app) as prof:
     adm.delete(f"/api/alunos/{inativo}")                 # aluno inativo: não copia
     aluno("Velho", ta, t2)                                 # só no 2º tri: não copia
     aluno("Na extinta", tc, t4)
-    con = sqlite3.connect(DB); con.execute("update turmas set ativo=0 where id=?", (tc,)); con.commit(); con.close()
+    _banco.sql(DB, "update turmas set ativo=false where id=?", (tc,))
 
     print("== Prévia")
     p = adm.get("/api/trimestres/proximo").json()

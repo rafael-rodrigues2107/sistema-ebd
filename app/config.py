@@ -11,6 +11,8 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = "sqlite+aiosqlite:///./ebd.db"
+    # Sem pool de conexões: só para os testes (vários TestClient = vários loops de eventos)
+    db_sem_pool: bool = False
 
     # Arquivos enviados (logo da igreja e ícones gerados). Em produção: /data/uploads
     uploads_dir: str = "./uploads"
@@ -19,6 +21,10 @@ class Settings(BaseSettings):
     app_name: str = "Sistema EBD"
     debug: bool = True
     secret_key: str = "change-me-in-production"
+
+    # Senha do primeiro admin (só usada se o banco estiver sem usuários).
+    # Vazia = gera uma senha aleatória e mostra uma única vez no log.
+    admin_initial_password: str = ""
 
 
 settings = Settings()

@@ -1,15 +1,18 @@
 """Teste local da proteção de rotas — banco SQLite temporário no scratchpad."""
 import os, secrets, sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _banco
 
 SCRATCH = Path(__file__).parent
 DB = SCRATCH / "teste_rotas.db"
 if DB.exists():
     DB.unlink()
-os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{DB.as_posix()}"
+os.environ["DATABASE_URL"] = _banco.url(DB)
+os.environ["ADMIN_INITIAL_PASSWORD"] = _banco.SENHA_ADMIN
 os.environ["SECRET_KEY"] = secrets.token_hex(16)
-sys.path.insert(0, r"C:\dev\sistema-ebd\app")
-os.chdir(r"C:\dev\sistema-ebd\app")
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
+os.chdir(str(Path(__file__).resolve().parent.parent / "app"))
 
 from fastapi.testclient import TestClient
 from main import app

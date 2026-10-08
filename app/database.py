@@ -1,6 +1,7 @@
 from collections.abc import AsyncGenerator
 
 from sqlalchemy import event
+from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_scoped_session,
@@ -11,11 +12,11 @@ from sqlalchemy.ext.asyncio import (
 from config import settings
 
 # ── Engine ──────────────────────────────────────────────────────────────
+_opcoes_pool = {"poolclass": NullPool} if settings.db_sem_pool else {"pool_size": 10, "max_overflow": 20}
 engine = create_async_engine(
     settings.database_url,
     echo=settings.debug,
-    pool_size=10,
-    max_overflow=20,
+    **_opcoes_pool,
 )
 
 # For SQLite: enable WAL mode and foreign keys on connect
