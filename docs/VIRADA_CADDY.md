@@ -1,5 +1,8 @@
 # Roteiro: trocar nginx + certbot por Caddy (certificado automático por igreja)
 
+> **Executado em 08/out/2026.** Certificado real emitido na primeira visita; ~14 s de parada; sem reversão.
+> Este documento fica como referência (e como plano de volta enquanto o certificado antigo valer, até 19/nov/2026).
+
 Por quê: cada igreja nova (`igreja.minhaebd.cloud`, ou domínio próprio no futuro) precisa de HTTPS. O Caddy emite o
 certificado do Let's Encrypt sozinho na primeira visita e renova sozinho, mas só para domínios que o app confirma
 (`GET /interno/dominio-permitido`, 200 apenas para igreja ativa). Não há mais certbot, cron nem bloco de nginx por igreja.

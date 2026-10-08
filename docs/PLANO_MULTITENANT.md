@@ -11,10 +11,12 @@ cerca de 150 pontos de consulta ao banco, `create_all` no startup (sem migration
   todas as tabelas, unicidades por igreja).
 - Fase 3 (RLS e isolamento): feita em 08/out/2026 e **em produção** (migration `0003`, papel `ebd_app` sem bypass, `app.igreja_id`
   por transação, gatilhos contra referência entre igrejas, igreja pelo Host). Hoje existe uma igreja só (id 1).
-- Fase 4 (subdomínio, login e marca por igreja): código e testes prontos, **ainda não em produção**: JWT com a igreja,
-  logo/ícones/manifest/uploads por igreja (`uploads/<igreja_id>/`), login com filtro explícito pela igreja, e o proxy HTTPS
-  trocado de nginx+certbot para **Caddy** com certificado automático por domínio de igreja (roteiro em `docs/VIRADA_CADDY.md`).
-  Depende de um registro DNS curinga (`*.minhaebd.cloud`) no painel da Hostinger para os subdomínios.
+- Fase 4 (subdomínio, login e marca por igreja): feita em 08/out/2026 e **em produção**: JWT com a igreja,
+  logo/ícones/manifest/uploads por igreja (`uploads/<igreja_id>/`; os 6 arquivos do logo da igreja 1 foram movidos sozinhos),
+  login com filtro explícito pela igreja, e o proxy HTTPS trocado de nginx+certbot para **Caddy** com certificado real do
+  Let's Encrypt emitido na primeira visita (`minhaebd.cloud` e `www`; troca com ~14 s de parada, roteiro em `docs/VIRADA_CADDY.md`).
+  **Pendente:** registro DNS curinga (`*.minhaebd.cloud`, tipo A para 72.61.62.199) no painel da Hostinger; sem ele os
+  subdomínios por igreja não resolvem. A emissão do certificado de um subdomínio só foi testada com CA de teste.
 - Fases 5 e 6: pendentes (painel do dono para criar/suspender igrejas; backup por igreja e LGPD).
 - Observação: o SQLite não isola igrejas (não tem RLS). O app recusa subir em SQLite com mais de uma igreja.
 

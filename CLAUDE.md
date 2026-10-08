@@ -14,14 +14,19 @@ Sistema de chamada e gestão da Escola Bíblica Dominical: chamada pelos profess
 ## Produção (VPS Hostinger)
 - Site: https://minhaebd.cloud — servidor `root@72.61.62.199`, código em `/opt/sistema-ebd`
 - Sobe com `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build app`
-- Containers: `sistema-ebd-app-1` (FastAPI), `sistema-ebd-db-1` (Postgres 16) e `sistema-ebd-nginx-1` (HTTPS).
-  Depois de recriar o app, reiniciar o nginx (`docker compose ... restart nginx`) para ele pegar o endereço novo.
+- Containers: `sistema-ebd-app-1` (FastAPI), `sistema-ebd-db-1` (Postgres 16) e `sistema-ebd-caddy-1` (proxy HTTPS).
+  O Caddy resolve o app a cada requisição: não precisa reiniciar o proxy depois de recriar o app.
 - Banco de produção: Postgres no volume `sistema-ebd_pg_ebd`, sem porta exposta (só a rede interna do compose).
   Desde 08/out/2026; antes era SQLite. O `/data/ebd.db` antigo (volume `sistema-ebd_ebd_data`) foi mantido só como último
   recurso e pode ser arquivado depois de ~30 dias. O volume `/data` guarda também os uploads (logo da igreja).
 - `.env.prod` só existe no servidor (`SECRET_KEY`, `POSTGRES_PASSWORD`) — nunca versionar
-- Certificado: certbot instalado no host (timer systemd, webroot no volume `sistema-ebd_certbot_www`);
-  o hook `/etc/letsencrypt/renewal-hooks/deploy/reload-nginx-ebd.sh` recarrega o nginx após renovar
+- HTTPS: **Caddy** (`caddy/Caddyfile`) emite e renova sozinho o certificado do Let's Encrypt de cada domínio na primeira visita,
+  mas só para domínio de igreja ativa: o Caddy pergunta ao app em `GET /interno/dominio-permitido` (fechado para fora no Caddy).
+  Certificados e chaves ficam no volume `sistema-ebd_caddy_data`: **não apagar** (refazer tudo bate no limite do Let's Encrypt).
+  Desde 08/out/2026; antes era nginx + certbot. O certbot do host está desativado (`certbot.timer`) e o hook antigo foi movido
+  para `/root/certbot-hook-antigo/`; o certificado antigo em `/etc/letsencrypt` (vale até 19/nov/2026) e o compose antigo
+  `/root/compose-nginx.yml` ficam só como plano de volta e podem ser apagados depois. Roteiro e limites em `docs/VIRADA_CADDY.md`.
+  Subdomínios por igreja (`<sub>.minhaebd.cloud`) ainda precisam de um registro DNS curinga `*` na Hostinger (não criado).
 - Primeiro admin: `seed_admin` só roda com o banco sem usuários e usa `ADMIN_INITIAL_PASSWORD` (ou gera senha aleatória
   e mostra uma vez no log). Não existe senha padrão.
 
@@ -65,8 +70,9 @@ Sistema de chamada e gestão da Escola Bíblica Dominical: chamada pelos profess
 - Próximo: multi-igreja numa única VPS e um único Postgres (coluna `igreja_id` + RLS, igreja pelo domínio).
   Plano e fases em `docs/PLANO_MULTITENANT.md`. **Em produção desde 08/out/2026:** fase 0 (segurança), fase 1 (Postgres),
   fase 2 (tabela `igrejas` e `igreja_id` em todas as tabelas, migration `0002`) e fase 3 (RLS/isolamento, migration `0003`,
-  papel `ebd_app`; o `.env.prod` tem `APP_DB_PASSWORD`). Hoje há uma igreja só (id 1, `minhaebd.cloud`), mas o isolamento já vale.
-  Faltam: JWT com igreja, certificado curinga, marca/uploads por igreja, painel do dono, LGPD.
+  papel `ebd_app`; o `.env.prod` tem `APP_DB_PASSWORD`) e fase 4 (JWT com a igreja, marca e uploads por igreja em
+  `uploads/<igreja_id>/`, Caddy). Hoje há uma igreja só (id 1, `minhaebd.cloud`), mas o isolamento e a marca por igreja já valem.
+  Faltam: DNS curinga, painel do dono para criar/suspender igrejas (fase 5), backup por igreja e LGPD (fase 6).
 
 ## Multi-igreja (como funciona no código)
 - A igreja de cada requisição vem do cabeçalho Host (`app/tenant.py`, middleware em `app/main.py`): `igrejas.dominio_proprio`
