@@ -4,6 +4,24 @@ Objetivo: várias igrejas no mesmo sistema, na mesma VPS, sem uma ver os dados d
 Estado de hoje: 1 app FastAPI + SQLite, 1 igreja, ~3.500 linhas, 13 tabelas, 11 routers,
 cerca de 150 pontos de consulta ao banco, `create_all` no startup (sem migrations).
 
+## Andamento
+- Fase 0 (segurança da VPS e backup): feita em 07/out/2026.
+- Fase 1 (Postgres): feita em 08/out/2026. Produção roda em Postgres.
+- Fase 2 (estrutura multi-igreja): código e testes prontos (migration `0002`, tabela `igrejas`, `igreja_id` em todas as
+  tabelas, unicidades por igreja). **Ainda não está em produção** (ver "Colocar a fase 2 em produção").
+  O app continua funcionando como uma igreja só: todo dado novo cai na igreja 1 (padrão `1`). Nada muda para quem usa.
+- Fases 3 a 6: pendentes.
+
+### Colocar a fase 2 em produção
+A migration roda sozinha quando o app sobe (`entrypoint.sh` -> `alembic upgrade head`) e leva segundos.
+1. Backup manual antes: `/usr/local/sbin/ebd-backup.sh` (confirmar `backup ok (postgres)`).
+2. `cd /opt/sistema-ebd && git pull --ff-only`
+3. `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build app` e depois `... restart nginx`.
+4. Conferir: `docker logs sistema-ebd-app-1` mostra `Running upgrade 0001 -> 0002`; o site abre; login e chamada funcionam.
+5. Opcional: registrar o domínio da igreja 1: `docker exec sistema-ebd-db-1 psql -U ebd -d ebd -c "update igrejas set dominio_proprio='minhaebd.cloud' where id=1"`.
+Voltar atrás: `alembic downgrade 0001` (dentro do container do app) e voltar o código anterior. Só é possível enquanto
+não existir segunda igreja com nomes repetidos.
+
 ## Decisões de arquitetura
 
 | Tema | Decisão | Motivo |

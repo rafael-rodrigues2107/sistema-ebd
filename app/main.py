@@ -23,7 +23,7 @@ from routers.matriculas import router as matriculas_router
 from routers.trimestres import router as trimestres_router
 from routers.trocas import router as trocas_router
 from routers.turmas import router as turmas_router
-from seed import seed_admin
+from seed import garantir_igreja_padrao, seed_admin
 
 
 @asynccontextmanager
@@ -33,6 +33,7 @@ async def lifespan(_app: FastAPI):
     # Alembic (entrypoint.sh roda `alembic upgrade head` antes de subir o app).
     if settings.database_url.startswith("sqlite"):
         await init_db()
+    await garantir_igreja_padrao()
     await seed_admin()
     yield
 
