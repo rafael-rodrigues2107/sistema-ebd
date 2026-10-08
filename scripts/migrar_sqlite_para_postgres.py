@@ -6,7 +6,8 @@ Uso (a partir da raiz do projeto, com o ambiente do app):
         --origem  sqlite+aiosqlite:///caminho/ebd.db \
         --destino postgresql+asyncpg://usuario:senha@host:5432/banco
 
-- Só lê o SQLite (aberto em modo somente leitura); nunca altera a origem.
+- Só lê o SQLite (somente leitura e imutável); nunca altera a origem. Aponte para um backup
+  ou rode com o app parado (o arquivo -wal é ignorado).
 - Recusa rodar se alguma tabela do destino já tiver linhas (evita duplicar).
 - Copia na ordem das chaves estrangeiras, tudo numa única transação: se algo falhar, nada fica.
 - Acerta as sequências (próximo id) e confere contagens e somas antes de confirmar.
@@ -25,12 +26,16 @@ from models import Base  # noqa: E402
 
 
 def _origem_somente_leitura(url: str) -> str:
-    """sqlite+aiosqlite:///x.db -> abre com mode=ro (garante que a origem não muda)."""
+    """sqlite+aiosqlite:///x.db -> abre somente leitura e imutável (a origem nunca muda).
+
+    `immutable=1` também permite ler arquivo em pasta montada como somente leitura e
+    em modo WAL. Use sobre um BACKUP ou com o app parado: ele ignora o arquivo -wal.
+    """
     prefixo = "sqlite+aiosqlite:///"
     if not url.startswith(prefixo):
         raise SystemExit("A origem precisa ser sqlite+aiosqlite:///caminho/arquivo.db")
     caminho = url[len(prefixo):]
-    return f"sqlite+aiosqlite:///file:{caminho}?mode=ro&uri=true"
+    return f"sqlite+aiosqlite:///file:{caminho}?mode=ro&immutable=1&uri=true"
 
 
 async def migrar(origem: str, destino: str) -> int:
