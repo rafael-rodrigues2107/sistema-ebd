@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     # Arquivos enviados (logo da igreja e ícones gerados). Em produção: /data/uploads
     uploads_dir: str = "./uploads"
 
+    # Auditoria da ferramenta do dono (scripts/igrejas.py). Vazio = <pasta de uploads>/../auditoria_dono.log
+    auditoria_dono_log: str = ""
+
     # App
     app_name: str = "Sistema EBD"
     debug: bool = True

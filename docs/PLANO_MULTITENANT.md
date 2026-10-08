@@ -15,7 +15,10 @@ cerca de 150 pontos de consulta ao banco, `create_all` no startup (sem migration
   logo/ícones/manifest/uploads por igreja (`uploads/<igreja_id>/`), login com filtro explícito pela igreja, e o proxy HTTPS
   trocado de nginx+certbot para **Caddy** com certificado automático por domínio de igreja (roteiro em `docs/VIRADA_CADDY.md`).
   Depende de um registro DNS curinga (`*.minhaebd.cloud`) no painel da Hostinger para os subdomínios.
-- Fases 5 e 6: pendentes (painel do dono para criar/suspender igrejas; backup por igreja e LGPD).
+- Fase 5 (ferramenta do dono): **CLI pronta e testada, ainda não em produção** (`scripts/igrejas.py`; fluxo abaixo). Decisão: CLI
+  primeiro, sem painel web (menor superfície de ataque; o app nem tem permissão de gravar em `igrejas`). Painel web só se o
+  volume de igrejas justificar.
+- Fase 6: pendente (backup por igreja e restauração individual, exportar/apagar dados de uma igreja, termos e privacidade).
 - Observação: o SQLite não isola igrejas (não tem RLS). O app recusa subir em SQLite com mais de uma igreja.
 
 ### Como a fase 2 foi colocada em produção (histórico)
@@ -40,6 +43,30 @@ Muda o papel de banco do app, então exige variáveis novas e um deploy mais cui
 Voltar atrás: `docker compose ... run --rm --no-deps app sh -c "cd /app && alembic downgrade 0002"`, voltar o código/compose
 anterior (app com o usuário `ebd`). O código da fase 2 funciona no esquema da fase 3 (grava `igreja_id` explícito).
 Atenção: depois da fase 3, acessar o app pelo IP ou por domínio não cadastrado dá 404 (de propósito).
+
+### Fase 5: ferramenta do dono (`scripts/igrejas.py`)
+Roda **dentro do container do app**, conecta como DONO (`MIGRATION_DATABASE_URL`) e nunca é exposta por HTTP. Recusa rodar se
+a conexão não for superusuário/bypass de RLS (o `ebd_app` não serve). Comandos:
+```
+docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py listar            # id, status, alunos, turmas, usuários, endereços (--json)
+docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py verificar --subdominio batista
+docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py criar --nome "Igreja Batista" --subdominio batista [--dominio exemplo.com.br] [--admin-usuario admin] [--admin-nome "Pastor X"]
+docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py suspender batista   # pede confirmação (ou --sim); aceita id, subdomínio ou domínio
+docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py reativar batista
+```
+- `criar` faz tudo numa transação: linha em `igrejas`, `configuracao_igreja` com o nome e o admin com **senha temporária
+  aleatória, exibida uma única vez** (não vai para log nem auditoria). Peça ao admin para trocá-la no primeiro acesso
+  (ainda não há troca obrigatória nem convite por e-mail; `usuarios` não tem e-mail).
+- Subdomínio: 3 a 63 caracteres minúsculos `a-z0-9-`, sem hífen no começo/fim nem duplo, fora da lista de reservados
+  (www, api, admin, dp, mail, painel, interno, ebd, minhaebd, ...) e não usado. Domínio próprio: normalizado (minúsculas, sem
+  `www.`), não pode ser IP nem estar sob o `DOMINIO_BASE` (para isso existe subdomínio).
+- Suspender: `ativa=false` → 403 em tudo (inclusive sessões abertas) e `/interno/dominio-permitido` nega, então o Caddy não
+  emite certificado novo. Vale em até 30 s (cache do app). Reativar desfaz; os dados não são tocados.
+- Auditoria: uma linha JSON por ação e por recusa (quando, quem no SO, ação, igreja) em `/data/auditoria_dono.log` (volume
+  do app; `AUDITORIA_DONO_LOG` muda o caminho). Não há remoção de igreja de propósito (fica para a fase 6/LGPD).
+- Depois de `criar` com subdomínio, é preciso existir o DNS curinga `*.minhaebd.cloud` (A -> IP da VPS); sem ele o subdomínio não
+  resolve. A primeira visita emite o certificado.
+- Teste: `testes/teste_igrejas_dono.py` (Postgres): CLI real, login pelo Host, isolamento, suspensão/reativação, validações, auditoria.
 
 ## Decisões de arquitetura
 

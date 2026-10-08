@@ -66,7 +66,8 @@ Sistema de chamada e gestão da Escola Bíblica Dominical: chamada pelos profess
   Plano e fases em `docs/PLANO_MULTITENANT.md`. **Em produção desde 08/out/2026:** fase 0 (segurança), fase 1 (Postgres),
   fase 2 (tabela `igrejas` e `igreja_id` em todas as tabelas, migration `0002`) e fase 3 (RLS/isolamento, migration `0003`,
   papel `ebd_app`; o `.env.prod` tem `APP_DB_PASSWORD`). Hoje há uma igreja só (id 1, `minhaebd.cloud`), mas o isolamento já vale.
-  Faltam: JWT com igreja, certificado curinga, marca/uploads por igreja, painel do dono, LGPD.
+  Fase 4 (JWT com igreja, marca/uploads por igreja, Caddy) e fase 5 (CLI do dono, abaixo) estão prontas no código; veja o plano
+  para o que já está em produção. Faltam: DNS/certificado curinga, LGPD (fase 6).
 
 ## Multi-igreja (como funciona no código)
 - A igreja de cada requisição vem do cabeçalho Host (`app/tenant.py`, middleware em `app/main.py`): `igrejas.dominio_proprio`
@@ -82,6 +83,14 @@ Sistema de chamada e gestão da Escola Bíblica Dominical: chamada pelos profess
 - Fora de requisição (scripts, seed) use `sessao_da_igreja(<id>)`. O app não grava em `igrejas`; criar/suspender igreja é do dono.
 - Verificar o app dentro do container: `curl -H 'Host: minhaebd.cloud' http://127.0.0.1:8000/login.html` (ou `/healthz`); sem Host
   de igreja a resposta é 404.
+
+## Gerenciar igrejas (ferramenta do dono)
+- `scripts/igrejas.py` (criar, listar, verificar, suspender, reativar), sempre dentro do container do app, como dono do banco:
+  `docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py <comando>`. Detalhes e regras de subdomínio em
+  `docs/PLANO_MULTITENANT.md` (seção "Fase 5").
+- `criar` mostra a senha temporária do admin uma única vez. Suspensa = 403 e sem certificado novo. Cada ação vai para
+  `/data/auditoria_dono.log`. Não há rota HTTP para isto de propósito. Subdomínio exige o DNS curinga `*.minhaebd.cloud`.
+- Teste: `testes/teste_igrejas_dono.py` (só Postgres).
 
 ## Ambiente local
 - Projeto em `C:\dev\sistema-ebd` (fora do OneDrive de propósito)
