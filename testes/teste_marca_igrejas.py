@@ -146,6 +146,18 @@ with cliente("igreja1.test") as c1, cliente("igrejab.test") as c2, cliente("igre
     check("o admin da A só altera a configuração da A", r.status_code == 200
           and c2_anonimo.get("/api/config").json()["nome_igreja"] == "Igreja Beta")
 
+# ── validação de domínio para o certificado HTTPS (o Caddy pergunta antes de emitir) ──
+_banco.sql(DB, "insert into igrejas (id, nome, dominio_proprio, ativa, created_at) values (?,?,?,?,?)",
+           (3, "Igreja C", "igrejac.test", False, datetime(2026, 10, 8)))
+tenant.limpar_cache()
+with cliente("interno.invalido") as ca:  # o Host da requisição não importa: vale o parâmetro `domain`
+    def pergunta(dominio):
+        return ca.get("/interno/dominio-permitido", params={"domain": dominio}).status_code
+    check("certificado: domínio de igreja ativa é permitido (inclusive com www.)",
+          pergunta("igreja1.test") == 200 and pergunta("igrejab.test") == 200 and pergunta("www.igrejab.test") == 200)
+    check("certificado: domínio desconhecido, vazio ou de igreja suspensa é negado",
+          pergunta("desconhecido.test") == 404 and pergunta("") == 404 and pergunta("igrejac.test") == 404)
+
 DB.unlink(missing_ok=True)
 print("\nTODOS OS TESTES PASSARAM" if not falhas else f"\nFALHARAM {len(falhas)}: {falhas}")
 sys.exit(1 if falhas else 0)
