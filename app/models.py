@@ -2,7 +2,7 @@
 Modelos de banco de dados — Sistema EBD (Escola Bíblica Dominical).
 
 Stack: SQLAlchemy 2.0 (async) com DeclarativeBase.
-Banco: PostgreSQL (produção) / SQLite (MVP local).
+Banco: PostgreSQL (produção) / SQLite (desenvolvimento e testes).
 
 Relações principais:
   Turma  1──N  Matricula
@@ -38,13 +38,49 @@ class Base(DeclarativeBase):
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# 1. Turma (Classe)
+# 0. Igreja (cliente) e mixin de pertencimento
 # ═════════════════════════════════════════════════════════════════════════════
-class Turma(Base):
-    __tablename__ = "turmas"
+class Igreja(Base):
+    """Uma igreja (cliente). Toda tabela de dados aponta para ela via `igreja_id`."""
+
+    __tablename__ = "igrejas"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    nome: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    nome: Mapped[str] = mapped_column(String(120), nullable=False)
+    subdominio: Mapped[Optional[str]] = mapped_column(
+        String(63), unique=True, nullable=True, comment="igreja.minhaebd.cloud -> 'igreja'"
+    )
+    dominio_proprio: Mapped[Optional[str]] = mapped_column(
+        String(253), unique=True, nullable=True, comment="domínio próprio do cliente, se houver"
+    )
+    ativa: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+    def __repr__(self) -> str:
+        return f"<Igreja id={self.id} nome='{self.nome}'>"
+
+
+class PorIgreja:
+    """Mixin: a linha pertence a uma igreja.
+
+    Fase 2: o padrão é a igreja 1 (única existente). Na fase 3 o padrão passa a vir da
+    sessão do banco (`app.igreja_id`) e entra o RLS, que impede ler/gravar em outra igreja.
+    """
+
+    igreja_id: Mapped[int] = mapped_column(
+        ForeignKey("igrejas.id"), nullable=False, default=1, server_default="1", index=True
+    )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 1. Turma (Classe)
+# ═════════════════════════════════════════════════════════════════════════════
+class Turma(PorIgreja, Base):
+    __tablename__ = "turmas"
+    __table_args__ = (UniqueConstraint("igreja_id", "nome", name="uq_turma_igreja_nome"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    nome: Mapped[str] = mapped_column(String(120), nullable=False)
     faixa_etaria: Mapped[str] = mapped_column(
         String(60), nullable=False, comment="Adultos, Jovens, Adolescentes, Juniores, Primários, Maternal, etc."
     )
@@ -67,7 +103,7 @@ class Turma(Base):
 # ═════════════════════════════════════════════════════════════════════════════
 # 2. Trimestre
 # ═════════════════════════════════════════════════════════════════════════════
-class Trimestre(Base):
+class Trimestre(PorIgreja, Base):
     __tablename__ = "trimestres"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -81,7 +117,7 @@ class Trimestre(Base):
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     __table_args__ = (
-        UniqueConstraint("ano", "numero", name="uq_trimestre_ano_numero"),
+        UniqueConstraint("igreja_id", "ano", "numero", name="uq_trimestre_igreja_ano_numero"),
         CheckConstraint("numero BETWEEN 1 AND 4", name="ck_trimestre_numero"),
     )
 
@@ -97,7 +133,7 @@ class Trimestre(Base):
 # ═════════════════════════════════════════════════════════════════════════════
 # 3. Aluno
 # ═════════════════════════════════════════════════════════════════════════════
-class Aluno(Base):
+class Aluno(PorIgreja, Base):
     __tablename__ = "alunos"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -121,7 +157,7 @@ class Aluno(Base):
 # ═════════════════════════════════════════════════════════════════════════════
 # 4. Professor
 # ═════════════════════════════════════════════════════════════════════════════
-class Professor(Base):
+class Professor(PorIgreja, Base):
     __tablename__ = "professores"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -142,7 +178,7 @@ class Professor(Base):
 # ═════════════════════════════════════════════════════════════════════════════
 # 5. TurmaProfessor (N:N com atributos)
 # ═════════════════════════════════════════════════════════════════════════════
-class TurmaProfessor(Base):
+class TurmaProfessor(PorIgreja, Base):
     """Associação N:N entre Turma e Professor, contextualizada por Trimestre."""
 
     __tablename__ = "turmas_professores"
@@ -172,7 +208,7 @@ class TurmaProfessor(Base):
 # ═════════════════════════════════════════════════════════════════════════════
 # 6. Matrícula
 # ═════════════════════════════════════════════════════════════════════════════
-class Matricula(Base):
+class Matricula(PorIgreja, Base):
     """Aluno matriculado em uma Turma durante um Trimestre."""
 
     __tablename__ = "matriculas"
@@ -200,7 +236,7 @@ class Matricula(Base):
 # ═════════════════════════════════════════════════════════════════════════════
 # 7. Domingo
 # ═════════════════════════════════════════════════════════════════════════════
-class Domingo(Base):
+class Domingo(PorIgreja, Base):
     """Cada domingo letivo dentro de um trimestre (≈13 por trimestre)."""
 
     __tablename__ = "domingos"
@@ -232,7 +268,7 @@ class Domingo(Base):
 # ═════════════════════════════════════════════════════════════════════════════
 # 8. Chamada (Frequência individual)
 # ═════════════════════════════════════════════════════════════════════════════
-class Chamada(Base):
+class Chamada(PorIgreja, Base):
     """
     Registro de presença individual por domingo.
 
@@ -277,7 +313,7 @@ class Chamada(Base):
 # ═════════════════════════════════════════════════════════════════════════════
 # 9. Fechamento do Domingo (Módulo 4 — Métricas da Classe)
 # ═════════════════════════════════════════════════════════════════════════════
-class FechamentoDomingo(Base):
+class FechamentoDomingo(PorIgreja, Base):
     """
     Métricas consolidadas de uma turma ao final de cada domingo.
 
@@ -332,14 +368,15 @@ class FechamentoDomingo(Base):
 # ═════════════════════════════════════════════════════════════════════════════
 # 10. Usuário do Sistema (autenticação)
 # ═════════════════════════════════════════════════════════════════════════════
-class Usuario(Base):
+class Usuario(PorIgreja, Base):
     """Usuário com acesso ao sistema (admin ou professor de turma)."""
 
     __tablename__ = "usuarios"
+    __table_args__ = (UniqueConstraint("igreja_id", "username", name="uq_usuario_igreja_username"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     nome: Mapped[str] = mapped_column(String(200), nullable=False)
-    username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    username: Mapped[str] = mapped_column(String(100), nullable=False)
     senha_hash: Mapped[str] = mapped_column(String(200), nullable=False)
     role: Mapped[str] = mapped_column(
         String(20), nullable=False, default="professor",
@@ -360,7 +397,7 @@ class Usuario(Base):
 # ═════════════════════════════════════════════════════════════════════════════
 # 11. Oferta (registro individual de ofertas/dízimos)
 # ═════════════════════════════════════════════════════════════════════════════
-class Oferta(Base):
+class Oferta(PorIgreja, Base):
     """Registro de ofertas e dízimos por turma em cada domingo."""
 
     __tablename__ = "ofertas"
@@ -387,7 +424,7 @@ class Oferta(Base):
 # ═════════════════════════════════════════════════════════════════════════════
 # 12. Solicitação de Troca de Turma
 # ═════════════════════════════════════════════════════════════════════════════
-class SolicitacaoTroca(Base):
+class SolicitacaoTroca(PorIgreja, Base):
     """
     Pedido do professor para mover um aluno de turma (ex.: mudou de faixa etária).
     Só vale depois que um admin aprova.
@@ -427,13 +464,14 @@ class SolicitacaoTroca(Base):
 # ═════════════════════════════════════════════════════════════════════════════
 # 13. Configuração da Igreja (identidade visual)
 # ═════════════════════════════════════════════════════════════════════════════
-class ConfiguracaoIgreja(Base):
+class ConfiguracaoIgreja(PorIgreja, Base):
     """
     Identidade visual da instalação: nome, nome do app, cor e logo.
     Linha única (id=1); sem linha, valem os padrões do sistema.
     """
 
     __tablename__ = "configuracao_igreja"
+    __table_args__ = (UniqueConstraint("igreja_id", name="uq_configuracao_igreja"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     nome_igreja: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)

@@ -8,7 +8,10 @@ Uso (a partir da raiz do projeto, com o ambiente do app):
 
 - Só lê o SQLite (somente leitura e imutável); nunca altera a origem. Aponte para um backup
   ou rode com o app parado (o arquivo -wal é ignorado).
-- Recusa rodar se alguma tabela do destino já tiver linhas (evita duplicar).
+- Recusa rodar se alguma tabela do destino já tiver linhas (evita duplicar). A tabela `igrejas`
+  é exceção: a migration 0002 já cria a igreja 1, que recebe os dados.
+- Aceita SQLite de qualquer fase: colunas/tabelas que a origem não tem (ex.: `igreja_id`, `igrejas`)
+  ficam com o padrão do destino, ou seja, tudo cai na igreja 1.
 - Copia na ordem das chaves estrangeiras, tudo numa única transação: se algo falhar, nada fica.
 - Acerta as sequências (próximo id) e confere contagens e somas antes de confirmar.
 """
@@ -48,16 +51,25 @@ async def migrar(origem: str, destino: str) -> int:
     erros = []
 
     async with src.connect() as s, dst.begin() as d:
-        # 1) o destino precisa estar vazio
+        # 1) o destino precisa estar vazio (exceto `igrejas`, que já traz a igreja 1)
         for t in tabelas:
+            if t.name == "igrejas":
+                continue
             n = await d.scalar(select(func.count()).select_from(t))
             if n:
                 raise SystemExit(f"Destino não está vazio: {t.name} tem {n} linhas. Nada foi copiado.")
 
-        # 2) copia
+        # 2) copia (só o que a origem tem)
+        copiadas = []
         print(f"{'tabela':<22}{'origem':>8}{'destino':>9}")
         for t in tabelas:
-            linhas = (await s.execute(select(t))).mappings().all()
+            cols_origem = [r[1] for r in (await s.execute(text(f"PRAGMA table_info({t.name})"))).all()]
+            if not cols_origem:
+                print(f"{t.name:<22}{'(sem)':>8}{'-':>9}  não existe na origem; fica com o padrão do destino")
+                continue
+            copiadas.append(t)
+            cols = [t.c[n] for n in cols_origem if n in t.c]
+            linhas = (await s.execute(select(*cols))).mappings().all()
             if linhas:
                 await d.execute(insert(t), [dict(r) for r in linhas])
             n_dst = await d.scalar(select(func.count()).select_from(t))
@@ -73,11 +85,11 @@ async def migrar(origem: str, destino: str) -> int:
                     f"COALESCE((SELECT MAX(id) FROM {t.name}), 0) + 1, false)"
                 ))
 
-        # 4) conferência de conteúdo: soma dos ids e das colunas numéricas por tabela
-        for t in tabelas:
+        # 4) conferência de conteúdo: soma dos ids por tabela copiada
+        for t in copiadas:
             if "id" not in t.c:
                 continue
-            soma_s = await s.scalar(select(func.coalesce(func.sum(t.c.id), 0)))
+            soma_s = await s.scalar(text(f"SELECT COALESCE(SUM(id), 0) FROM {t.name}"))
             soma_d = await d.scalar(select(func.coalesce(func.sum(t.c.id), 0)))
             if soma_s != soma_d:
                 erros.append(f"{t.name}: soma dos ids difere ({soma_s} x {soma_d})")

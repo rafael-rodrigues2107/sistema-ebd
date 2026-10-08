@@ -15,7 +15,7 @@ from sqlalchemy import select
 
 from config import settings
 from database import _async_session_factory
-from models import Aluno, Domingo, Matricula, Trimestre, Turma, Usuario
+from models import Aluno, Domingo, Igreja, Matricula, Trimestre, Turma, Usuario
 
 # ── Dados de exemplo ───────────────────────────────────────────────────────
 
@@ -172,6 +172,15 @@ async def seed():
         await session.commit()
         print(f"  ✅ {total_criados} matrículas criadas/verificadas.")
         print("🏁 Seed concluído com sucesso!")
+
+
+async def garantir_igreja_padrao() -> None:
+    """Garante a igreja 1 (padrão da fase 2). No Postgres a migration 0002 já a cria; em
+    SQLite (dev/testes) e em bancos novos ela nasce aqui. Idempotente."""
+    async with _async_session_factory() as session:
+        if await session.get(Igreja, 1) is None:
+            session.add(Igreja(id=1, nome="Igreja principal"))
+            await session.commit()
 
 
 async def seed_admin() -> None:

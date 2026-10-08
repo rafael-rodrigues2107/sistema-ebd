@@ -63,7 +63,9 @@ Sistema de chamada e gestão da Escola Bíblica Dominical: chamada pelos profess
 - Já existe a tela "Configurações da Igreja" (nome, nome curto do app, logo com upload e cor principal), com ícones do PWA
   gerados a partir do logo e arquivos guardados no volume `/data`.
 - Próximo: multi-igreja numa única VPS e um único Postgres (coluna `igreja_id` + RLS, subdomínio por igreja).
-  Plano e fases em `docs/PLANO_MULTITENANT.md` (fase 0 segurança e fase 1 Postgres estão feitas; falta a fase 2 em diante).
+  Plano e fases em `docs/PLANO_MULTITENANT.md`. Fases 0 (segurança) e 1 (Postgres) estão em produção. A fase 2 (tabela `igrejas`,
+  `igreja_id` em todas as tabelas, unicidades por igreja; migration `0002`) está no código, **mas só vale em produção depois do
+  deploy** (passos no plano). Por enquanto o app age como uma igreja só: todo dado novo cai na igreja 1. Falta RLS (fase 3).
   A virada SQLite → Postgres está documentada em `docs/VIRADA_POSTGRES.md`.
 
 ## Ambiente local
@@ -72,6 +74,6 @@ Sistema de chamada e gestão da Escola Bíblica Dominical: chamada pelos profess
 - No Windows, comandos SSH com heredoc: usar o Bash (o pipe do PowerShell insere BOM)
 - Testes: roteiros em `testes/` (`DEBUG=false PYTHONIOENCODING=utf-8 python testes/<arquivo>.py`), por padrão em SQLite
   temporário. Com `TEST_DATABASE_URL=postgresql+asyncpg://...` rodam em Postgres (o schema `public` desse banco é apagado a
-  cada execução; usar um banco de teste) e aplicam as migrations do Alembic.
+  cada execução; usar um banco de teste) e aplicam as migrations do Alembic. `testes/teste_multigreja.py` só roda em Postgres.
 - O Docker Desktop não abre neste PC: validar builds de imagem na VPS, em pasta e containers separados da produção.
 - O PR é aberto pelo navegador (não há `gh` instalado); o login do GitHub precisa estar feito no painel do navegador do app.
