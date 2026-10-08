@@ -1,10 +1,12 @@
 """Teste local das Configurações da Igreja — banco e uploads temporários."""
 import io, os, secrets, sys, tempfile
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _banco
 
 DB = Path(__file__).parent / f"teste_config_{secrets.token_hex(3)}.db"
 UPLOADS = tempfile.mkdtemp(prefix="ebd_uploads_")
-os.environ.update(DATABASE_URL=f"sqlite+aiosqlite:///{DB.as_posix()}", DEBUG="false",
+os.environ.update(DATABASE_URL=_banco.url(DB), ADMIN_INITIAL_PASSWORD=_banco.SENHA_ADMIN, DEBUG="false",
                   SECRET_KEY=secrets.token_hex(16), UPLOADS_DIR=UPLOADS)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 os.chdir(str(Path(__file__).resolve().parent.parent / "app"))

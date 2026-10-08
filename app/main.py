@@ -29,7 +29,10 @@ from seed import seed_admin
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Startup / shutdown events."""
-    await init_db()
+    # SQLite (dev/testes): cria as tabelas na hora. Postgres: o esquema vem do
+    # Alembic (entrypoint.sh roda `alembic upgrade head` antes de subir o app).
+    if settings.database_url.startswith("sqlite"):
+        await init_db()
     await seed_admin()
     yield
 

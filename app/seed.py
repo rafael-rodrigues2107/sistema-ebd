@@ -7,11 +7,13 @@ Uso:
 """
 
 import asyncio
+import secrets
 from datetime import date, timedelta
 
 import bcrypt as _bcrypt
 from sqlalchemy import select
 
+from config import settings
 from database import _async_session_factory
 from models import Aluno, Domingo, Matricula, Trimestre, Turma, Usuario
 
@@ -173,20 +175,28 @@ async def seed():
 
 
 async def seed_admin() -> None:
-    """Cria o usuário administrador padrão se nenhum usuário existir."""
+    """Cria o usuário administrador inicial se nenhum usuário existir.
+
+    A senha vem de ADMIN_INITIAL_PASSWORD; sem ela, é gerada ao acaso e mostrada
+    uma única vez no log. Nunca existe uma senha padrão fixa.
+    """
     async with _async_session_factory() as session:
         total = await session.scalar(select(Usuario).limit(1))
         if total is not None:
             return
+        senha = settings.admin_initial_password or secrets.token_urlsafe(12)
         admin = Usuario(
             nome="Administrador",
             username="admin",
-            senha_hash=_bcrypt.hashpw(b"admin123", _bcrypt.gensalt()).decode(),
+            senha_hash=_bcrypt.hashpw(senha.encode(), _bcrypt.gensalt()).decode(),
             role="admin",
         )
         session.add(admin)
         await session.commit()
-        print("✅ Admin padrão criado — username: admin / senha: admin123")
+        if settings.admin_initial_password:
+            print("✅ Admin inicial criado — username: admin (senha definida em ADMIN_INITIAL_PASSWORD)")
+        else:
+            print(f"✅ Admin inicial criado — username: admin / senha: {senha}  (anote agora; não será mostrada de novo)")
 
 
 if __name__ == "__main__":
