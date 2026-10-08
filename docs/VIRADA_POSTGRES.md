@@ -38,10 +38,13 @@ Perda de dados: nenhuma, porque ninguém escreveu no Postgres e o SQLite ficou p
 Se já houve uso no Postgres antes de decidir voltar, as chamadas feitas nesse intervalo ficam só no Postgres.
 
 ## Depois (nos dias seguintes)
-- Trocar o backup diário: `/usr/local/sbin/ebd-backup.sh` hoje copia o SQLite; passa a usar
-  `docker exec sistema-ebd-db-1 pg_dump -U ebd ebd | gzip > /var/backups/ebd/ebd-<data>.sql.gz`
-  (manter os últimos 14 dias; ajustar também `C:\dev\backup-ebd\baixar-backup.ps1` para `ebd-*.sql.gz`).
-  **Fazer isso no mesmo dia da virada**, senão o backup fica parado.
-- Testar uma restauração do `pg_dump` em banco vazio.
+- **Backup:** não há o que trocar. `scripts/backup/ebd-backup.sh` (instalado em `/usr/local/sbin/ebd-backup.sh`
+  desde 08/out) detecta pelo `DATABASE_URL` do container do app se o banco é Postgres ou SQLite: antes da virada
+  gera `ebd-*.db.gz`, depois gera `ebd-*.pgdump` (`pg_dump -Fc`). A cópia noturna do PC
+  (`C:\devackup-ebdaixar-backup.ps1`) baixa os dois formatos. Conferir no dia seguinte à virada que
+  `/var/log/ebd-backup.log` mostra `backup ok (postgres)` e que o PC baixou um `.pgdump`.
+- **Testar a restauração todo mês:** `scripts/backup/testar-restauracao-postgres.sh /var/backups/ebd/<arquivo>.pgdump`
+  sobe um Postgres descartável, restaura e mostra as contagens (não toca na produção).
+  Para restaurar de verdade: parar o app, `docker exec -i sistema-ebd-db-1 pg_restore -U ebd -d ebd --clean --if-exists < arquivo.pgdump`, subir o app.
 - Manter `/data/ebd.db` por 30 dias como último recurso; depois arquivar e remover.
 - Atualizar o CLAUDE.md (banco de produção: Postgres, não mais SQLite).
