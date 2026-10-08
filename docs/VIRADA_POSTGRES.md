@@ -41,7 +41,7 @@ Se já houve uso no Postgres antes de decidir voltar, as chamadas feitas nesse i
 - **Backup:** não há o que trocar. `scripts/backup/ebd-backup.sh` (instalado em `/usr/local/sbin/ebd-backup.sh`
   desde 08/out) detecta pelo `DATABASE_URL` do container do app se o banco é Postgres ou SQLite: antes da virada
   gera `ebd-*.db.gz`, depois gera `ebd-*.pgdump` (`pg_dump -Fc`). A cópia noturna do PC
-  (`C:\devackup-ebdaixar-backup.ps1`) baixa os dois formatos. Conferir no dia seguinte à virada que
+  (`C:\dev\backup-ebd\baixar-backup.ps1`) baixa os dois formatos. Conferir no dia seguinte à virada que
   `/var/log/ebd-backup.log` mostra `backup ok (postgres)` e que o PC baixou um `.pgdump`.
 - **Testar a restauração todo mês:** `scripts/backup/testar-restauracao-postgres.sh /var/backups/ebd/<arquivo>.pgdump`
   sobe um Postgres descartável, restaura e mostra as contagens (não toca na produção).
