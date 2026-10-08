@@ -11,6 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 
+import armazenamento
 from config import settings
 from database import init_db
 from routers.alunos import router as alunos_router
@@ -34,6 +35,7 @@ async def lifespan(_app: FastAPI):
     # Alembic (entrypoint.sh roda `alembic upgrade head` antes de subir o app).
     if settings.database_url.startswith("sqlite"):
         await init_db()
+    armazenamento.migrar_arquivos_legados()
     await garantir_igreja_padrao()
     await seed_admin()
     yield
