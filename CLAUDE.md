@@ -62,11 +62,26 @@ Sistema de chamada e gestão da Escola Bíblica Dominical: chamada pelos profess
   não é multi-tenant. Evitar soluções que amarrem o código a uma igreja só.
 - Já existe a tela "Configurações da Igreja" (nome, nome curto do app, logo com upload e cor principal), com ícones do PWA
   gerados a partir do logo e arquivos guardados no volume `/data`.
-- Próximo: multi-igreja numa única VPS e um único Postgres (coluna `igreja_id` + RLS, subdomínio por igreja).
-  Plano e fases em `docs/PLANO_MULTITENANT.md`. Fases 0 (segurança) e 1 (Postgres) estão em produção. A fase 2 (tabela `igrejas`,
-  `igreja_id` em todas as tabelas, unicidades por igreja; migration `0002`) está no código, **mas só vale em produção depois do
-  deploy** (passos no plano). Por enquanto o app age como uma igreja só: todo dado novo cai na igreja 1. Falta RLS (fase 3).
-  A virada SQLite → Postgres está documentada em `docs/VIRADA_POSTGRES.md`.
+- Próximo: multi-igreja numa única VPS e um único Postgres (coluna `igreja_id` + RLS, igreja pelo domínio).
+  Plano e fases em `docs/PLANO_MULTITENANT.md`. Em produção: fases 0 (segurança), 1 (Postgres) e 2 (tabela `igrejas` e
+  `igreja_id` em todas as tabelas, migration `0002`, desde 08/out/2026). A fase 3 (RLS/isolamento, migration `0003`) está no
+  código, **mas só vale em produção depois do deploy** (passos no plano, exige `APP_DB_PASSWORD` no `.env.prod`).
+  Faltam: JWT com igreja, certificado curinga, marca/uploads por igreja, painel do dono, LGPD.
+
+## Multi-igreja (como funciona no código)
+- A igreja de cada requisição vem do cabeçalho Host (`app/tenant.py`, middleware em `app/main.py`): `igrejas.dominio_proprio`
+  exato (o `www.` é ignorado) ou `<subdominio>.<DOMINIO_BASE>`. Host de igreja inativa: 403. Host desconhecido: 404, a menos que
+  `IGREJA_PADRAO_ID` esteja definido (instalação de uma igreja só, desenvolvimento e testes). `/healthz` responde em qualquer host.
+- Postgres: o app conecta com o papel comum `ebd_app` (`DATABASE_URL`), **sem superusuário e sem bypass de RLS**, criado por
+  `scripts/provisionar_papel_app.py` a cada subida. Migrations, provisionamento e backup usam o dono (`MIGRATION_DATABASE_URL`,
+  usuário `ebd`, superusuário, que ignora o RLS de propósito). Se o app conectar como dono, o isolamento deixa de valer.
+- A cada transação o app executa `set_config('app.igreja_id', <id>, true)` (`app/database.py`, evento `after_begin`). As 13 tabelas de dados
+  têm RLS ligado e forçado: sem essa variável nada é lido nem gravado. O padrão de `igreja_id` ao gravar vem da requisição.
+- Gatilhos (`checar_mesma_igreja`) barram uma linha que aponte para linha de outra igreja. Tabela nova com `igreja_id` precisa de
+  política RLS e de gatilhos para as suas chaves estrangeiras: `testes/teste_isolamento.py` falha se faltar RLS em alguma tabela.
+- Fora de requisição (scripts, seed) use `sessao_da_igreja(<id>)`. O app não grava em `igrejas`; criar/suspender igreja é do dono.
+- Verificar o app dentro do container: `curl -H 'Host: minhaebd.cloud' http://127.0.0.1:8000/login.html` (ou `/healthz`); sem Host
+  de igreja a resposta é 404.
 
 ## Ambiente local
 - Projeto em `C:\dev\sistema-ebd` (fora do OneDrive de propósito)
@@ -74,6 +89,6 @@ Sistema de chamada e gestão da Escola Bíblica Dominical: chamada pelos profess
 - No Windows, comandos SSH com heredoc: usar o Bash (o pipe do PowerShell insere BOM)
 - Testes: roteiros em `testes/` (`DEBUG=false PYTHONIOENCODING=utf-8 python testes/<arquivo>.py`), por padrão em SQLite
   temporário. Com `TEST_DATABASE_URL=postgresql+asyncpg://...` rodam em Postgres (o schema `public` desse banco é apagado a
-  cada execução; usar um banco de teste) e aplicam as migrations do Alembic. `testes/teste_multigreja.py` só roda em Postgres.
+  cada execução; usar um banco de teste) e aplicam as migrations do Alembic. `testes/teste_multigreja.py` e `testes/teste_isolamento.py` só rodam em Postgres (o isolamento usa o papel `ebd_app`, então o RLS vale nos testes).
 - O Docker Desktop não abre neste PC: validar builds de imagem na VPS, em pasta e containers separados da produção.
 - O PR é aberto pelo navegador (não há `gh` instalado); o login do GitHub precisa estar feito no painel do navegador do app.

@@ -7,6 +7,8 @@ case "$DATABASE_URL" in
     cd /app
     echo "Aplicando migrations (alembic upgrade head)..."
     alembic upgrade head
+    echo "Preparando o papel de banco do app (RLS)..."
+    python /app/scripts/provisionar_papel_app.py
     cd /app/app
     ;;
 esac

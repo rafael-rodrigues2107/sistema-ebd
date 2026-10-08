@@ -31,6 +31,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
+from tenant import igreja_do_contexto
+
 
 # ── Base ────────────────────────────────────────────────────────────────────
 class Base(DeclarativeBase):
@@ -63,12 +65,12 @@ class Igreja(Base):
 class PorIgreja:
     """Mixin: a linha pertence a uma igreja.
 
-    Fase 2: o padrão é a igreja 1 (única existente). Na fase 3 o padrão passa a vir da
-    sessão do banco (`app.igreja_id`) e entra o RLS, que impede ler/gravar em outra igreja.
+    O padrão é a igreja da requisição (tenant.igreja_do_contexto). No Postgres, o RLS impede
+    ler/gravar linhas de outra igreja e o padrão do banco vem de `app.igreja_id` (migration 0003).
     """
 
     igreja_id: Mapped[int] = mapped_column(
-        ForeignKey("igrejas.id"), nullable=False, default=1, server_default="1", index=True
+        ForeignKey("igrejas.id"), nullable=False, default=igreja_do_contexto, index=True
     )
 
 

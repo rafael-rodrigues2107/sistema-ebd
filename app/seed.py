@@ -14,7 +14,7 @@ import bcrypt as _bcrypt
 from sqlalchemy import select
 
 from config import settings
-from database import _async_session_factory
+from database import _async_session_factory, sessao_da_igreja
 from models import Aluno, Domingo, Igreja, Matricula, Trimestre, Turma, Usuario
 
 # ── Dados de exemplo ───────────────────────────────────────────────────────
@@ -70,7 +70,7 @@ def gerar_domingos(data_inicio: date, data_fim: date) -> list[date]:
 # ── Main ───────────────────────────────────────────────────────────────────
 
 async def seed():
-    async with _async_session_factory() as session:
+    async with sessao_da_igreja(settings.igreja_padrao_id or 1) as session:
         print("🌱 Iniciando seed…")
 
         # ── 1. Trimestre ──
@@ -175,8 +175,10 @@ async def seed():
 
 
 async def garantir_igreja_padrao() -> None:
-    """Garante a igreja 1 (padrão da fase 2). No Postgres a migration 0002 já a cria; em
-    SQLite (dev/testes) e em bancos novos ela nasce aqui. Idempotente."""
+    """Garante a igreja 1 em SQLite (dev/testes). No Postgres a migration 0002 já a cria e o papel
+    do app nem tem permissão de gravar em `igrejas`. Idempotente."""
+    if not settings.database_url.startswith("sqlite"):
+        return
     async with _async_session_factory() as session:
         if await session.get(Igreja, 1) is None:
             session.add(Igreja(id=1, nome="Igreja principal"))
@@ -188,8 +190,13 @@ async def seed_admin() -> None:
 
     A senha vem de ADMIN_INITIAL_PASSWORD; sem ela, é gerada ao acaso e mostrada
     uma única vez no log. Nunca existe uma senha padrão fixa.
+
+    Só roda em instalação de uma igreja só (IGREJA_PADRAO_ID definido): com várias igrejas, o
+    admin de cada uma é criado pela ferramenta do dono (fase 5), não pelo app.
     """
-    async with _async_session_factory() as session:
+    if settings.igreja_padrao_id is None:
+        return
+    async with sessao_da_igreja(settings.igreja_padrao_id) as session:
         total = await session.scalar(select(Usuario).limit(1))
         if total is not None:
             return

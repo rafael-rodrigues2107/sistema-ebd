@@ -42,6 +42,7 @@ async def deve_falhar(c, sql, *args):
 
 async def main():
     c = await asyncpg.connect(DSN)
+    await c.execute("select set_config('app.igreja_id', '1', false)")  # padrão do igreja_id (fase 3)
 
     # ── Estrutura: toda tabela de dados tem igreja_id NOT NULL com chave para igrejas ──
     for t in TABELAS:
@@ -64,7 +65,7 @@ async def main():
 
     # ── Dados padrão caem na igreja 1 (comportamento atual preservado) ──
     await c.execute("insert into turmas (nome, faixa_etaria, ativo, created_at, updated_at) values ('Jovens','Jovens',true,now(),now())")
-    check("insert sem igreja_id vai para a igreja 1",
+    check("insert sem igreja_id usa a igreja da sessão (app.igreja_id=1)",
           await c.fetchval("select igreja_id from turmas where nome='Jovens'") == 1)
 
     # ── Mesmos nomes em igrejas diferentes: permitido ──
