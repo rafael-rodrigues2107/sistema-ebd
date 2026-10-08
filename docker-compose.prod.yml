@@ -21,7 +21,11 @@ services:
     build: .
     restart: always
     environment:
-      DATABASE_URL: postgresql+asyncpg://ebd:${POSTGRES_PASSWORD}@db:5432/ebd
+      # O app conecta com um papel COMUM (sem bypass de RLS); migrations e provisionamento usam o dono.
+      DATABASE_URL: postgresql+asyncpg://ebd_app:${APP_DB_PASSWORD}@db:5432/ebd
+      MIGRATION_DATABASE_URL: postgresql+asyncpg://ebd:${POSTGRES_PASSWORD}@db:5432/ebd
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+      DOMINIO_BASE: ${DOMINIO_BASE:-}
       DEBUG: "false"
       SECRET_KEY: ${SECRET_KEY}
       UPLOADS_DIR: /data/uploads

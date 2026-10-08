@@ -7,9 +7,9 @@ Entry point: uvicorn main:app --reload
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from config import settings
 from database import init_db
@@ -24,6 +24,7 @@ from routers.trimestres import router as trimestres_router
 from routers.trocas import router as trocas_router
 from routers.turmas import router as turmas_router
 from seed import garantir_igreja_padrao, seed_admin
+from tenant import SUSPENSA, resolver_igreja
 
 
 @asynccontextmanager
@@ -48,6 +49,27 @@ app = FastAPI(
     redoc_url="/redoc" if settings.debug else None,
     openapi_url="/openapi.json" if settings.debug else None,
 )
+
+@app.middleware("http")
+async def identificar_igreja(request: Request, call_next):
+    """Descobre a igreja pelo Host. Sem igreja não há dado nem página: 404 (ou 403 se suspensa)."""
+    if request.url.path == "/healthz":
+        return await call_next(request)
+    igreja_id = await resolver_igreja(request.headers.get("host", ""))
+    if igreja_id == SUSPENSA:
+        return JSONResponse({"detail": "Esta igreja está com o acesso suspenso."}, status_code=403)
+    if igreja_id is None:
+        igreja_id = settings.igreja_padrao_id
+    if igreja_id is None:
+        return JSONResponse({"detail": "Igreja não encontrada."}, status_code=404)
+    request.state.igreja_id = igreja_id
+    return await call_next(request)
+
+
+@app.get("/healthz", include_in_schema=False)
+async def healthz():
+    return {"status": "ok"}
+
 
 # ── Routers da API ──
 app.include_router(turmas_router)

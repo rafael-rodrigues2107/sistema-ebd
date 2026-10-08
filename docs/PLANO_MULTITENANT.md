@@ -10,7 +10,10 @@ cerca de 150 pontos de consulta ao banco, `create_all` no startup (sem migration
 - Fase 2 (estrutura multi-igreja): código e testes prontos (migration `0002`, tabela `igrejas`, `igreja_id` em todas as
   tabelas, unicidades por igreja). **Ainda não está em produção** (ver "Colocar a fase 2 em produção").
   O app continua funcionando como uma igreja só: todo dado novo cai na igreja 1 (padrão `1`). Nada muda para quem usa.
-- Fases 3 a 6: pendentes.
+- Fase 3 (RLS e isolamento): código e testes prontos (migration `0003`, papel `ebd_app` sem bypass, `app.igreja_id`
+  por transação, gatilhos contra referência entre igrejas, igreja pelo Host). **Ainda não está em produção.**
+- Fases 4 a 6: pendentes. (Da fase 4 já veio o essencial: igreja pelo domínio e configuração por igreja. Faltam
+  JWT com igreja, certificado curinga, uploads/marca por igreja.)
 
 ### Colocar a fase 2 em produção
 A migration roda sozinha quando o app sobe (`entrypoint.sh` -> `alembic upgrade head`) e leva segundos.
@@ -21,6 +24,19 @@ A migration roda sozinha quando o app sobe (`entrypoint.sh` -> `alembic upgrade 
 5. Opcional: registrar o domínio da igreja 1: `docker exec sistema-ebd-db-1 psql -U ebd -d ebd -c "update igrejas set dominio_proprio='minhaebd.cloud' where id=1"`.
 Voltar atrás: `alembic downgrade 0001` (dentro do container do app) e voltar o código anterior. Só é possível enquanto
 não existir segunda igreja com nomes repetidos.
+
+### Colocar a fase 3 em produção
+Muda o papel de banco do app, então exige variáveis novas e um deploy mais cuidadoso que o da fase 2.
+1. No servidor, em `/opt/sistema-ebd/.env.prod`, acrescentar `APP_DB_PASSWORD=<openssl rand -hex 24>` (só letras e números; nunca versionar).
+2. Backup manual: `/usr/local/sbin/ebd-backup.sh` (confirmar `backup ok (postgres)`).
+3. `git pull --ff-only`, `docker compose ... build app`, depois `up -d --no-deps app` e `restart nginx`.
+   No log do app: `Running upgrade 0002 -> 0003` e `papel do app pronto: ebd_app (... sem bypass de RLS)`.
+4. Conferir: site abre; login e chamada funcionam; `docker exec sistema-ebd-app-1 python -c "..."` deve usar o Host
+   (`curl -H 'Host: minhaebd.cloud' http://127.0.0.1:8000/login.html` ou `/healthz`), pois sem Host de igreja a resposta é 404.
+5. Conferir o isolamento: `docker exec sistema-ebd-db-1 psql -U ebd -d ebd -c "select rolsuper, rolbypassrls from pg_roles where rolname='ebd_app'"` deve dar `f | f`.
+Voltar atrás: `docker compose ... run --rm --no-deps app sh -c "cd /app && alembic downgrade 0002"`, voltar o código/compose
+anterior (app com o usuário `ebd`). O código da fase 2 funciona no esquema da fase 3 (grava `igreja_id` explícito).
+Atenção: depois da fase 3, acessar o app pelo IP ou por domínio não cadastrado dá 404 (de propósito).
 
 ## Decisões de arquitetura
 

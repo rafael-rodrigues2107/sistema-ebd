@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from config import settings
 from models import Base
 
+URL_MIGRACAO = settings.migration_database_url or settings.database_url
+
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -17,7 +19,7 @@ target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
     context.configure(
-        url=settings.database_url,
+        url=URL_MIGRACAO,
         target_metadata=target_metadata,
         literal_binds=True,
         compare_type=True,
@@ -33,7 +35,7 @@ def _executar(connection) -> None:
 
 
 async def run_migrations_online() -> None:
-    engine = create_async_engine(settings.database_url)
+    engine = create_async_engine(URL_MIGRACAO)
     async with engine.connect() as connection:
         await connection.run_sync(_executar)
     await engine.dispose()

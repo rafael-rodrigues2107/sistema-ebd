@@ -11,7 +11,7 @@ trap 'docker rm -f $C >/dev/null 2>&1 || true' EXIT
 docker rm -f $C >/dev/null 2>&1 || true
 docker run -d --name $C -e POSTGRES_USER=ebd -e POSTGRES_PASSWORD=teste -e POSTGRES_DB=ebd postgres:16-alpine >/dev/null
 for i in $(seq 1 30); do docker exec $C pg_isready -U ebd -d ebd >/dev/null 2>&1 && break; sleep 1; done
-docker exec -i $C pg_restore -U ebd -d ebd --no-owner --exit-on-error < "$ARQ"
+docker exec -i $C pg_restore -U ebd -d ebd --no-owner --no-acl --exit-on-error < "$ARQ"   # --no-acl: o papel ebd_app não existe neste banco novo
 echo "restaurado. contagem por tabela:"
 for t in alunos turmas trimestres domingos matriculas chamadas fechamentos_domingo usuarios; do
   printf '  %-22s %s\n' "$t" "$(docker exec $C psql -U ebd -d ebd -tAc "select count(*) from $t")"

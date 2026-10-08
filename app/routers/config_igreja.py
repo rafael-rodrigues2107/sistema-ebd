@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from PIL import Image, ImageOps, UnidentifiedImageError
 from pydantic import BaseModel, Field, field_validator
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import armazenamento
@@ -93,7 +94,7 @@ def _contraste_com_branco(cor: str) -> float:
 
 
 async def _obter(session: AsyncSession) -> ConfiguracaoIgreja | None:
-    return await session.get(ConfiguracaoIgreja, 1)
+    return (await session.execute(select(ConfiguracaoIgreja).limit(1))).scalar_one_or_none()
 
 
 def _to_read(cfg: ConfiguracaoIgreja | None) -> ConfigRead:
@@ -177,7 +178,7 @@ async def salvar_config(
     _admin: Usuario = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
 ):
-    cfg = await _obter(session) or ConfiguracaoIgreja(id=1)
+    cfg = await _obter(session) or ConfiguracaoIgreja()
     cfg.nome_igreja = body.nome_igreja
     cfg.nome_app = body.nome_app
     cfg.cor_primaria = body.cor_primaria
@@ -196,7 +197,7 @@ async def enviar_logo(
     if len(dados) > TAMANHO_MAX_UPLOAD:
         raise HTTPException(413, "Imagem maior que 5 MB. Envie um arquivo menor.")
 
-    cfg = await _obter(session) or ConfiguracaoIgreja(id=1)
+    cfg = await _obter(session) or ConfiguracaoIgreja()
     for nome, conteudo in _gerar_arquivos(dados, cfg.cor_primaria or PADRAO_COR).items():
         armazenamento.salvar(nome, conteudo)
 
