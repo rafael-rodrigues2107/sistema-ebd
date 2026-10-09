@@ -66,8 +66,8 @@ Sistema de chamada e gestão da Escola Bíblica Dominical: chamada pelos profess
   Plano e fases em `docs/PLANO_MULTITENANT.md`. **Em produção desde 08/out/2026:** fase 0 (segurança), fase 1 (Postgres),
   fase 2 (tabela `igrejas` e `igreja_id` em todas as tabelas, migration `0002`) e fase 3 (RLS/isolamento, migration `0003`,
   papel `ebd_app`; o `.env.prod` tem `APP_DB_PASSWORD`). Hoje há uma igreja só (id 1, `minhaebd.cloud`), mas o isolamento já vale.
-  Fase 4 (JWT com igreja, marca/uploads por igreja, Caddy) e fase 5 (CLI do dono, abaixo) estão prontas no código; veja o plano
-  para o que já está em produção. Faltam: DNS/certificado curinga, LGPD (fase 6).
+  Também em produção (08 e 09/out/2026): fase 4 (JWT com igreja, marca/uploads por igreja, Caddy) e fase 5/5b (CLI do dono e senha
+  temporária, abaixo). Faltam: DNS curinga e o teste real de certificado de subdomínio, backup de `/data` e do `caddy_data`, LGPD (fase 6).
 
 ## Multi-igreja (como funciona no código)
 - A igreja de cada requisição vem do cabeçalho Host (`app/tenant.py`, middleware em `app/main.py`): `igrejas.dominio_proprio`
@@ -85,7 +85,7 @@ Sistema de chamada e gestão da Escola Bíblica Dominical: chamada pelos profess
   de igreja a resposta é 404.
 
 ## Gerenciar igrejas (ferramenta do dono)
-- `scripts/igrejas.py` (criar, listar, verificar, suspender, reativar, senha), sempre dentro do container do app, como dono do banco:
+- `scripts/igrejas.py` (criar, listar, verificar, editar, suspender, reativar, senha), sempre dentro do container do app, como dono do banco:
   `docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py <comando>`. Detalhes e regras de subdomínio em
   `docs/PLANO_MULTITENANT.md` (seção "Fase 5").
 - `criar` e `senha` mostram a senha temporária uma única vez e obrigam a troca no primeiro login (`usuarios.trocar_senha`;

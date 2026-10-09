@@ -197,12 +197,40 @@ with cliente(H2) as c2, cliente(H1) as c1, cliente(H2) as c2_ruim, cliente(H1) a
     rc, _, err = cli("senha", "naoexiste")
     check("senha: igreja inexistente é recusada", rc == 2 and "não encontrada" in err)
 
+# ── editar ──
+rc, out, _ = cli("editar", "batista", "--nome", "Igreja Batista Central", "--subdominio", "central")
+check("editar: muda nome e subdomínio e avisa do endereço antigo", rc == 0 and "central" in out and "ATENÇÃO" in out)
+tenant.limpar_cache()
+with cliente("central.ebd.test") as cn, cliente("batista.ebd.test") as antigo:
+    check("editar: o endereço novo funciona e os dados continuam lá",
+          cn.post("/api/auth/login", json={"username": "admin", "senha": senha2}).status_code == 200)
+    check("editar: o endereço antigo não leva mais à igreja (login recusado; certificado negado)",
+          antigo.post("/api/auth/login", json={"username": "admin", "senha": senha2}).status_code == 401
+          and antigo.get("/interno/dominio-permitido", params={"domain": "batista.ebd.test"}).status_code == 404
+          and antigo.get("/interno/dominio-permitido", params={"domain": "central.ebd.test"}).status_code == 200)
+rc, _, err = cli("editar", "central", "--subdominio", "www")
+check("editar: subdomínio reservado é recusado", rc == 2)
+rc, _, err = cli("editar", "central", "--dominio", "igreja1.test")
+check("editar: domínio de outra igreja é recusado", rc == 2 and "já em uso" in err)
+rc, _, err = cli("editar", "2", "--subdominio", "central")
+check("editar: repetir o próprio valor não muda nada", rc == 0)
+rc, _, err = cli("editar", "central")
+check("editar: sem nada a alterar é recusado", rc == 2)
+rc, out, _ = cli("editar", "central", "--dominio", "central.igrejab.test")
+check("editar: adiciona domínio próprio", rc == 0)
+rc, out, _ = cli("editar", "2", "--sem-dominio")
+check("editar: remove o domínio próprio e mantém o subdomínio", rc == 0)
+rc, out, _ = cli("listar", "--json")
+check("editar: listar mostra o nome novo", {i["id"]: i["nome"] for i in json.loads(out)}[2] == "Igreja Batista Central")
+
 rc, _, err = cli("suspender", "naoexiste", "--sim")
 check("suspender igreja inexistente é recusado", rc == 2 and "não encontrada" in err)
 
 # ── igreja só com domínio próprio, e conferência de que o banco recusa quem não é dono ──
 rc, out, _ = cli("criar", "--nome", "Igreja Dominio", "--dominio", "www.Igrejadominio.test", "--admin-usuario", "pastor")
 check("criar só com domínio próprio (normaliza www. e maiúsculas)", rc == 0 and "igrejadominio.test" in out and "id 3" in out)
+rc, _, err = cli("editar", "3", "--sem-dominio")
+check("editar: não deixa a igreja sem nenhum endereço", rc == 2 and "nenhum endereço" in err)
 env_app = {**os.environ, "MIGRATION_DATABASE_URL": _banco.url_app(), "PYTHONIOENCODING": "utf-8"}
 r = subprocess.run([sys.executable, str(RAIZ / "scripts" / "igrejas.py"), "listar"], cwd=RAIZ, env=env_app,
                    capture_output=True, text=True, encoding="utf-8")
@@ -212,7 +240,7 @@ check("conectado como o papel do app (sem poder de dono), a ferramenta recusa", 
 linhas = [json.loads(l) for l in AUDITORIA.read_text(encoding="utf-8").splitlines()]
 acoes = [(l["acao"], l["resultado"]) for l in linhas]
 check("auditoria: criar, senha, suspender, reativar e recusas registrados",
-      ("criar", "ok") in acoes and ("senha", "ok") in acoes and ("suspender", "ok") in acoes and ("reativar", "ok") in acoes and ("criar", "recusado") in acoes)
+      ("criar", "ok") in acoes and ("senha", "ok") in acoes and ("editar", "ok") in acoes and ("suspender", "ok") in acoes and ("reativar", "ok") in acoes and ("criar", "recusado") in acoes)
 check("auditoria: cada linha tem quando, quem e ação", all(l.get("quando") and l.get("quem") and l.get("acao") for l in linhas))
 check("auditoria: a senha temporária nunca aparece", senha not in AUDITORIA.read_text(encoding="utf-8"))
 
