@@ -11,16 +11,17 @@ cerca de 150 pontos de consulta ao banco, `create_all` no startup (sem migration
   todas as tabelas, unicidades por igreja).
 - Fase 3 (RLS e isolamento): feita em 08/out/2026 e **em produção** (migration `0003`, papel `ebd_app` sem bypass, `app.igreja_id`
   por transação, gatilhos contra referência entre igrejas, igreja pelo Host). Hoje existe uma igreja só (id 1).
-- Fase 4 (subdomínio, login e marca por igreja): código e testes prontos, **ainda não em produção**: JWT com a igreja,
+- Fase 4 (subdomínio, login e marca por igreja): **em produção** (Caddy rodando); falta só o DNS curinga e o teste real de certificado de subdomínio: JWT com a igreja,
   logo/ícones/manifest/uploads por igreja (`uploads/<igreja_id>/`), login com filtro explícito pela igreja, e o proxy HTTPS
   trocado de nginx+certbot para **Caddy** com certificado automático por domínio de igreja (roteiro em `docs/VIRADA_CADDY.md`).
   Depende de um registro DNS curinga (`*.minhaebd.cloud`) no painel da Hostinger para os subdomínios.
 - Fase 5 (ferramenta do dono): **CLI em produção desde 08/out/2026** (`scripts/igrejas.py`; fluxo abaixo). Decisão: CLI
   primeiro, sem painel web (menor superfície de ataque; o app nem tem permissão de gravar em `igrejas`). Painel web só se o
   volume de igrejas justificar.
-- Fase 5b (senha temporária): **código e testes prontos, ainda não em produção.** Migration `0004` (`usuarios.trocar_senha`),
+- Fase 5b (senha temporária): **em produção desde 09/out/2026.** Migration `0004` (`usuarios.trocar_senha`),
   `POST /api/auth/trocar-senha`, página `/trocar-senha.html` e comando `igrejas.py senha`. Convite por e-mail ficou de fora
   (precisa de serviço de envio e coluna de e-mail; só vale com a segunda igreja pagante).
+- Fase 5c: comando `igrejas.py editar` (nome, subdomínio, domínio próprio) e correção desta seção.
 - Fase 6: pendente (backup por igreja e restauração individual, exportar/apagar dados de uma igreja, termos e privacidade).
 - Observação: o SQLite não isola igrejas (não tem RLS). O app recusa subir em SQLite com mais de uma igreja.
 
@@ -57,6 +58,7 @@ docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py criar --nome "I
 docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py suspender batista   # pede confirmação (ou --sim); aceita id, subdomínio ou domínio
 docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py reativar batista
 docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py senha batista --usuario admin   # redefine: nova senha temporária
+docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py editar batista --nome "Novo" [--subdominio novo] [--dominio x.com.br | --sem-dominio]
 ```
 - `criar` faz tudo numa transação: linha em `igrejas`, `configuracao_igreja` com o nome e o admin com **senha temporária
   aleatória, exibida uma única vez** (não vai para log nem auditoria) e `trocar_senha=true`: no primeiro login o sistema
@@ -69,10 +71,12 @@ docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py senha batista -
 - Subdomínio: 3 a 63 caracteres minúsculos `a-z0-9-`, sem hífen no começo/fim nem duplo, fora da lista de reservados
   (www, api, admin, dp, mail, painel, interno, ebd, minhaebd, ...) e não usado. Domínio próprio: normalizado (minúsculas, sem
   `www.`), não pode ser IP nem estar sob o `DOMINIO_BASE` (para isso existe subdomínio).
+- `editar`: muda só o que for informado, com as mesmas validações; nunca deixa a igreja sem endereço. Mudar subdomínio/domínio
+  derruba o endereço antigo na hora (o app instalado no celular precisa ser reinstalado) e o certificado novo sai na primeira visita.
 - Suspender: `ativa=false` → 403 em tudo (inclusive sessões abertas) e `/interno/dominio-permitido` nega, então o Caddy não
   emite certificado novo. Vale em até 30 s (cache do app). Reativar desfaz; os dados não são tocados.
 - Auditoria: uma linha JSON por ação e por recusa (quando, quem no SO, ação, igreja) em `/data/auditoria_dono.log` (volume
-  do app; `AUDITORIA_DONO_LOG` muda o caminho). Não há remoção de igreja de propósito (fica para a fase 6/LGPD).
+  do app, **fora do backup diário**; `AUDITORIA_DONO_LOG` muda o caminho). Não há remoção de igreja de propósito (fica para a fase 6/LGPD).
 - Depois de `criar` com subdomínio, é preciso existir o DNS curinga `*.minhaebd.cloud` (A -> IP da VPS); sem ele o subdomínio não
   resolve. A primeira visita emite o certificado.
 - Testes: `testes/teste_igrejas_dono.py` (Postgres): CLI real, login pelo Host, isolamento, suspensão/reativação, validações,

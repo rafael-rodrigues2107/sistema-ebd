@@ -10,6 +10,7 @@ o papel do app (`ebd_app`) nem tem permissão de gravar em `igrejas`.
     docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py suspender batista
     docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py reativar batista
     docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py senha batista --usuario admin
+    docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py editar batista --nome "Novo nome" --subdominio novo
 
 `criar` gera um admin com SENHA TEMPORÁRIA ALEATÓRIA, mostrada uma única vez (nunca vai para o log).
 Cada ação (inclusive recusas) é registrada em AUDITORIA_DONO_LOG, uma linha JSON por ação.
@@ -150,19 +151,23 @@ async def achar_igreja(conn, ref: str):
     return linha
 
 
-async def checar_livre(conn, subdominio: str | None, dominio: str | None) -> None:
+async def checar_livre(conn, subdominio: str | None, dominio: str | None, ignorar_id: int = 0) -> None:
+    """Endereço livre para uso. `ignorar_id`: a própria igreja, ao editar."""
     base = settings.dominio_base.strip().lower()
     if subdominio:
-        if (await conn.scalar(text("SELECT count(*) FROM igrejas WHERE lower(subdominio) = :s"), {"s": subdominio})):
+        if (await conn.scalar(text("SELECT count(*) FROM igrejas WHERE lower(subdominio) = :s AND id <> :i"),
+                              {"s": subdominio, "i": ignorar_id})):
             raise Recusa(f"subdomínio já em uso: '{subdominio}'")
-        if base and (await conn.scalar(text("SELECT count(*) FROM igrejas WHERE lower(dominio_proprio) = :h"),
-                                       {"h": f"{subdominio}.{base}"})):
+        if base and (await conn.scalar(text("SELECT count(*) FROM igrejas WHERE lower(dominio_proprio) = :h AND id <> :i"),
+                                       {"h": f"{subdominio}.{base}", "i": ignorar_id})):
             raise Recusa(f"'{subdominio}.{base}' já é domínio próprio de outra igreja")
     if dominio:
-        if (await conn.scalar(text("SELECT count(*) FROM igrejas WHERE lower(dominio_proprio) = :d"), {"d": dominio})):
+        if (await conn.scalar(text("SELECT count(*) FROM igrejas WHERE lower(dominio_proprio) = :d AND id <> :i"),
+                              {"d": dominio, "i": ignorar_id})):
             raise Recusa(f"domínio já em uso: '{dominio}'")
         if base and dominio.endswith("." + base) and (await conn.scalar(
-                text("SELECT count(*) FROM igrejas WHERE lower(subdominio) = :s"), {"s": dominio[: -len(base) - 1]})):
+                text("SELECT count(*) FROM igrejas WHERE lower(subdominio) = :s AND id <> :i"),
+                {"s": dominio[: -len(base) - 1], "i": ignorar_id})):
             raise Recusa(f"'{dominio}' colide com o subdomínio de outra igreja")
 
 
@@ -323,6 +328,49 @@ async def cmd_senha(args) -> int:
     return 0
 
 
+async def cmd_editar(args) -> int:
+    """Muda nome, subdomínio ou domínio próprio de uma igreja existente. Só altera o que for informado."""
+    if not any((args.nome, args.subdominio, args.dominio, args.sem_dominio)):
+        raise Recusa("nada a alterar: use --nome, --subdominio, --dominio ou --sem-dominio")
+    if args.dominio and args.sem_dominio:
+        raise Recusa("use --dominio ou --sem-dominio, não os dois")
+    nome = args.nome.strip() if args.nome else None
+    if nome is not None and not 2 <= len(nome) <= 120:
+        raise Recusa("nome da igreja deve ter de 2 a 120 caracteres")
+    sub = validar_subdominio(args.subdominio) if args.subdominio else None
+    dom = validar_dominio(args.dominio) if args.dominio else None
+    engine = criar_engine()
+    try:
+        async with engine.begin() as conn:
+            await exigir_dono(conn)
+            ig = await achar_igreja(conn, args.igreja)
+            novo = {"nome": nome or ig["nome"], "subdominio": sub or ig["subdominio"],
+                    "dominio_proprio": None if args.sem_dominio else (dom or ig["dominio_proprio"])}
+            if not novo["subdominio"] and not novo["dominio_proprio"]:
+                raise Recusa("a igreja ficaria sem nenhum endereço (subdomínio ou domínio próprio)")
+            if novo["subdominio"] and not settings.dominio_base.strip():
+                raise Recusa("DOMINIO_BASE não está definido: subdomínios não funcionariam.")
+            mudou = {k: (ig[k], v) for k, v in novo.items() if ig[k] != v}
+            if not mudou:
+                print("Nada mudou: os valores informados já são os atuais.")
+                return 0
+            await checar_livre(conn, sub, dom, ignorar_id=ig["id"])
+            await conn.execute(
+                text("UPDATE igrejas SET nome = :n, subdominio = :s, dominio_proprio = :d WHERE id = :i"),
+                {"n": novo["nome"], "s": novo["subdominio"], "d": novo["dominio_proprio"], "i": ig["id"]})
+    finally:
+        await engine.dispose()
+    auditar("editar", "ok", igreja_id=ig["id"], alteracoes={k: {"de": a, "para": b} for k, (a, b) in mudou.items()})
+    print(f"Igreja id {ig['id']} atualizada:")
+    for k, (a, b) in mudou.items():
+        print(f"  {k}: {a or '(vazio)'} -> {b or '(vazio)'}")
+    if "subdominio" in mudou or "dominio_proprio" in mudou:
+        print("  ATENÇÃO: o endereço antigo deixa de funcionar na hora (404) e quem instalou o app no celular precisa")
+        print("  reinstalar pelo endereço novo; sessões abertas no endereço antigo caem. O certificado novo sai na")
+        print("  primeira visita (precisa de DNS apontando para a VPS). O app guarda a resolução por até 30 segundos.")
+    return 0
+
+
 async def cmd_suspender(args) -> int:
     return await _mudar_status(args, False)
 
@@ -352,6 +400,14 @@ def montar_parser() -> argparse.ArgumentParser:
     ls.add_argument("--json", action="store_true")
     ls.set_defaults(fn=cmd_listar)
 
+    ed = sub.add_parser("editar", help="muda nome, subdomínio ou domínio próprio de uma igreja")
+    ed.add_argument("igreja", help="id, subdomínio ou domínio próprio atual")
+    ed.add_argument("--nome")
+    ed.add_argument("--subdominio")
+    ed.add_argument("--dominio", help="novo domínio próprio")
+    ed.add_argument("--sem-dominio", action="store_true", help="remove o domínio próprio")
+    ed.set_defaults(fn=cmd_editar)
+
     pw = sub.add_parser("senha", help="redefine a senha de um usuário (temporária, troca obrigatória)")
     pw.add_argument("igreja", help="id, subdomínio ou domínio próprio")
     pw.add_argument("--usuario", default="admin", help="login do usuário (padrão: admin)")
@@ -373,7 +429,7 @@ def main(argv=None) -> int:
         return asyncio.run(args.fn(args))
     except Recusa as e:
         auditar(args.comando, "recusado", motivo=str(e),
-                **{k: v for k, v in vars(args).items() if k in ("nome", "subdominio", "dominio", "igreja", "usuario")})
+                **{k: v for k, v in vars(args).items() if k in ("nome", "subdominio", "dominio", "igreja", "usuario", "sem_dominio")})
         print(f"RECUSADO: {e}", file=sys.stderr)
         return 2
 
