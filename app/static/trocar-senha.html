@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trocar senha — Sistema EBD</title>
+<meta name="theme-color" content="#4f46e5">
+<script src="/static/marca.js?v=1"></script>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="/marca/icon-192.png">
+<style>
+  :root { --primary:#4f46e5; --danger-light:#fee2e2; --bg:#f1f5f9; --surface:#fff; --border:#e2e8f0; --text:#0f172a; --muted:#64748b; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: var(--bg); min-height: 100vh; display: flex;
+         align-items: center; justify-content: center; padding: 24px; color: var(--text); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 36px 32px;
+          width: 100%; max-width: 400px; box-shadow: 0 10px 25px -5px rgba(0,0,0,.1); }
+  h1 { font-size: 1.3rem; margin-bottom: 6px; }
+  p { color: var(--muted); font-size: .9rem; margin-bottom: 20px; }
+  label { display: block; font-size: .85rem; font-weight: 600; margin: 14px 0 6px; }
+  input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 1rem; }
+  input:focus { outline: 2px solid var(--primary); border-color: transparent; }
+  button { width: 100%; margin-top: 22px; padding: 13px; border: 0; border-radius: 10px; background: var(--primary);
+           color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: default; }
+  .erro { display: none; background: var(--danger-light); color: #b91c1c; border-radius: 10px; padding: 10px 12px;
+          font-size: .85rem; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Defina a sua senha</h1>
+  <p>Você entrou com uma senha temporária. Escolha uma senha só sua para continuar.</p>
+  <div id="erro" class="erro"></div>
+  <label for="atual">Senha temporária (atual)</label>
+  <input type="password" id="atual" autocomplete="current-password" autofocus>
+  <label for="nova">Nova senha (mínimo 8 caracteres)</label>
+  <input type="password" id="nova" autocomplete="new-password">
+  <label for="confirma">Repita a nova senha</label>
+  <input type="password" id="confirma" autocomplete="new-password">
+  <button id="btn" onclick="trocar()">Salvar e continuar</button>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+function erro(m) { $('erro').textContent = m; $('erro').style.display = 'block'; }
+['atual', 'nova', 'confirma'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') trocar(); }));
+
+async function trocar() {
+  $('erro').style.display = 'none';
+  const atual = $('atual').value, nova = $('nova').value;
+  if (!atual || !nova) return erro('Preencha todos os campos.');
+  if (nova.length < 8) return erro('A nova senha precisa ter pelo menos 8 caracteres.');
+  if (nova !== $('confirma').value) return erro('As senhas novas não são iguais.');
+  $('btn').disabled = true;
+  try {
+    const r = await fetch('/api/auth/trocar-senha', {
+      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ senha_atual: atual, senha_nova: nova }),
+    });
+    if (r.status === 401) return window.location.replace('/login.html');
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      throw new Error(typeof e.detail === 'string' ? e.detail : 'Não foi possível trocar a senha.');
+    }
+    const me = await (await fetch('/api/auth/me', { credentials: 'include' })).json();
+    window.location.replace(me.role === 'professor' ? '/' : '/cadastro.html');
+  } catch (e) { erro(e.message); $('btn').disabled = false; }
+}
+</script>
+</body>
+</html>

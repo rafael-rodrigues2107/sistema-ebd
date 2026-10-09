@@ -85,12 +85,13 @@ Sistema de chamada e gestão da Escola Bíblica Dominical: chamada pelos profess
   de igreja a resposta é 404.
 
 ## Gerenciar igrejas (ferramenta do dono)
-- `scripts/igrejas.py` (criar, listar, verificar, suspender, reativar), sempre dentro do container do app, como dono do banco:
+- `scripts/igrejas.py` (criar, listar, verificar, suspender, reativar, senha), sempre dentro do container do app, como dono do banco:
   `docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py <comando>`. Detalhes e regras de subdomínio em
   `docs/PLANO_MULTITENANT.md` (seção "Fase 5").
-- `criar` mostra a senha temporária do admin uma única vez. Suspensa = 403 e sem certificado novo. Cada ação vai para
+- `criar` e `senha` mostram a senha temporária uma única vez e obrigam a troca no primeiro login (`usuarios.trocar_senha`;
+  `/trocar-senha.html`; API responde 403 "Troca de senha obrigatória" até trocar). Suspensa = 403 e sem certificado novo. Cada ação vai para
   `/data/auditoria_dono.log`. Não há rota HTTP para isto de propósito. Subdomínio exige o DNS curinga `*.minhaebd.cloud`.
-- Teste: `testes/teste_igrejas_dono.py` (só Postgres).
+- Testes: `testes/teste_igrejas_dono.py` (só Postgres) e `testes/teste_senha_temporaria.py`.
 
 ## Ambiente local
 - Projeto em `C:\dev\sistema-ebd` (fora do OneDrive de propósito)

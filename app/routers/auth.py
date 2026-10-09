@@ -19,6 +19,7 @@ from models import Turma, Usuario
 from schemas import (
     LoginRequest,
     TokenResponse,
+    TrocarSenhaRequest,
     UsuarioCreate,
     UsuarioRead,
     UsuarioUpdate,
@@ -66,10 +67,11 @@ def _extrair_token(request: Request) -> Optional[str]:
 
 
 # ── Dependências de autenticação ──────────────────────────────────────────────
-async def get_current_user(
+async def usuario_da_sessao(
     request: Request,
     session: AsyncSession = Depends(get_session),
 ) -> Usuario:
+    """Usuário do token, mesmo com troca de senha pendente (só /me, /logout e /trocar-senha usam isto)."""
     token = _extrair_token(request)
     if not token:
         raise _401
@@ -88,6 +90,16 @@ async def get_current_user(
     user = await session.get(Usuario, int(user_id))
     if not user or not user.ativo:
         raise _401
+    return user
+
+
+SENHA_TEMPORARIA = "Troca de senha obrigatória"
+
+
+async def get_current_user(user: Usuario = Depends(usuario_da_sessao)) -> Usuario:
+    """Usuário autenticado e liberado. Com senha temporária pendente, tudo fora da troca de senha dá 403."""
+    if user.trocar_senha:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=SENHA_TEMPORARIA)
     return user
 
 
@@ -148,7 +160,24 @@ async def login(body: LoginRequest, request: Request, response: Response, sessio
         role=user.role,
         nome=user.nome,
         turma_id=user.turma_id,
+        trocar_senha=user.trocar_senha,
     )
+
+
+@auth_router.post("/trocar-senha")
+async def trocar_senha(
+    body: TrocarSenhaRequest,
+    user: Usuario = Depends(usuario_da_sessao),
+    session: AsyncSession = Depends(get_session),
+):
+    if not verificar_senha(body.senha_atual, user.senha_hash):
+        raise HTTPException(status_code=400, detail="Senha atual incorreta")
+    if body.senha_nova == body.senha_atual:
+        raise HTTPException(status_code=400, detail="A nova senha deve ser diferente da atual")
+    user.senha_hash = hash_senha(body.senha_nova)
+    user.trocar_senha = False
+    await session.commit()
+    return {"ok": True}
 
 
 @auth_router.post("/logout")
@@ -158,13 +187,14 @@ async def logout(response: Response):
 
 
 @auth_router.get("/me")
-async def me(user: Usuario = Depends(get_current_user)):
+async def me(user: Usuario = Depends(usuario_da_sessao)):
     return {
         "id": user.id,
         "nome": user.nome,
         "username": user.username,
         "role": user.role,
         "turma_id": user.turma_id,
+        "trocar_senha": user.trocar_senha,
     }
 
 

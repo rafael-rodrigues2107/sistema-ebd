@@ -227,6 +227,12 @@ class TokenResponse(BaseModel):
     role: str
     nome: str
     turma_id: Optional[int] = None
+    trocar_senha: bool = False
+
+
+class TrocarSenhaRequest(BaseModel):
+    senha_atual: str
+    senha_nova: str = Field(..., min_length=8, max_length=72)
 
 
 class UsuarioCreate(BaseModel):

@@ -22,6 +22,14 @@ function limparSessao() {
       limparSessao();
       setTimeout(() => window.location.replace('/login.html?expirou=1'), 1500);
     }
+    if (resp.status === 403 && url.includes('/api/') && !url.includes('/api/auth/trocar-senha') && !redirecionando) {
+      // senha temporária: nada funciona até o usuário definir a própria senha
+      const corpo = await resp.clone().json().catch(() => ({}));
+      if (corpo.detail === 'Troca de senha obrigatória') {
+        redirecionando = true;
+        window.location.replace('/trocar-senha.html');
+      }
+    }
     return resp;
   };
 })();

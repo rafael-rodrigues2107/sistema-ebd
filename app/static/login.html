@@ -231,6 +231,7 @@ async function fazerLogin() {
     localStorage.setItem('ebd_nome',     data.nome);
     localStorage.setItem('ebd_turma_id', data.turma_id ?? '');
 
+    if (data.trocar_senha) { window.location.replace('/trocar-senha.html'); return; }
     window.location.replace(data.role === 'professor' ? '/' : '/cadastro.html');
   } catch (e) {
     mostrarErro(e.message);

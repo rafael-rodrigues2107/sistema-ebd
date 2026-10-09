@@ -129,6 +129,11 @@ async def login_page():
     return FileResponse(static_dir / "login.html")
 
 
+@app.get("/trocar-senha.html")
+async def trocar_senha_page():
+    return FileResponse(static_dir / "trocar-senha.html")
+
+
 @app.get("/aluno.html")
 async def aluno_page():
     return FileResponse(static_dir / "aluno.html")

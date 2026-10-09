@@ -103,6 +103,24 @@ H1, H2 = "igreja1.test", "batista.ebd.test"
 with cliente(H2) as c2, cliente(H1) as c1, cliente(H2) as c2_ruim, cliente(H1) as c1_cruzado:
     r = c2.post("/api/auth/login", json={"username": "admin", "senha": senha})
     check("login na igreja nova pelo Host, com a senha temporária", r.status_code == 200)
+    check("o login avisa que a troca de senha é obrigatória", r.json().get("trocar_senha") is True)
+    check("senha temporária pendente: a API devolve 403 com o aviso",
+          (lambda x: x.status_code == 403 and x.json()["detail"] == "Troca de senha obrigatória")(c2.get("/api/alunos/")))
+    check("senha temporária pendente: /me continua acessível e traz trocar_senha",
+          c2.get("/api/auth/me").json().get("trocar_senha") is True)
+    check("troca: senha atual errada é recusada",
+          c2.post("/api/auth/trocar-senha", json={"senha_atual": "errada", "senha_nova": "NovaSenha-123"}).status_code == 400)
+    check("troca: nova senha curta é recusada",
+          c2.post("/api/auth/trocar-senha", json={"senha_atual": senha, "senha_nova": "curta"}).status_code == 422)
+    check("troca: nova senha igual à atual é recusada",
+          c2.post("/api/auth/trocar-senha", json={"senha_atual": senha, "senha_nova": senha}).status_code == 400)
+    check("troca de senha feita com sucesso",
+          c2.post("/api/auth/trocar-senha", json={"senha_atual": senha, "senha_nova": "NovaSenha-123"}).status_code == 200)
+    check("depois da troca a API libera e o flag some",
+          c2.get("/api/alunos/").status_code == 200 and c2.get("/api/auth/me").json()["trocar_senha"] is False)
+    check("a senha temporária não vale mais; a nova vale",
+          cliente(H2).post("/api/auth/login", json={"username": "admin", "senha": senha}).status_code == 401
+          and cliente(H2).post("/api/auth/login", json={"username": "admin", "senha": "NovaSenha-123"}).status_code == 200)
     check("senha errada é recusada", c2_ruim.post("/api/auth/login", json={"username": "admin", "senha": senha + "x"}).status_code == 401)
     check("o admin novo NÃO entra no domínio da outra igreja",
           c1_cruzado.post("/api/auth/login", json={"username": "admin", "senha": senha}).status_code == 401)
@@ -156,10 +174,28 @@ with cliente(H2) as c2, cliente(H1) as c1, cliente(H2) as c2_ruim, cliente(H1) a
     check("reativar (por id) funciona", rc == 0 and "reativada" in out)
     tenant.limpar_cache()
     check("reativada: o admin volta a entrar com a mesma senha e os dados estão lá",
-          cliente(H2).post("/api/auth/login", json={"username": "admin", "senha": senha}).status_code == 200
+          cliente(H2).post("/api/auth/login", json={"username": "admin", "senha": "NovaSenha-123"}).status_code == 200
           and {a["nome"] for a in c2.get("/api/alunos/").json()} == {"Aluno da Batista"})
     check("reativada: certificado volta a ser permitido",
           cliente("x.test").get("/interno/dominio-permitido", params={"domain": H2}).status_code == 200)
+
+    # ── redefinir senha pela CLI ──
+    rc, out, _ = cli("senha", "batista", "--usuario", "admin")
+    m = re.search(r"SENHA TEMPORÁRIA: (\S+)", out)
+    senha2 = m.group(1) if m else ""
+    check("senha: redefine e mostra uma nova senha temporária", rc == 0 and len(senha2) >= 12 and senha2 != senha)
+    check("senha: a sessão aberta passa a ser barrada (403) até trocar",
+          c2.get("/api/alunos/").status_code == 403)
+    check("senha: a senha anterior deixa de valer",
+          cliente(H2).post("/api/auth/login", json={"username": "admin", "senha": "NovaSenha-123"}).status_code == 401)
+    r = cliente(H2).post("/api/auth/login", json={"username": "admin", "senha": senha2})
+    check("senha: a temporária vale e exige a troca", r.status_code == 200 and r.json()["trocar_senha"] is True)
+    check("senha: a igreja 1 não foi afetada (admin com a mesma senha de antes)",
+          cliente(H1).post("/api/auth/login", json={"username": "admin", "senha": _banco.SENHA_ADMIN}).json()["trocar_senha"] is False)
+    rc, _, err = cli("senha", "batista", "--usuario", "fantasma")
+    check("senha: usuário inexistente é recusado", rc == 2 and "não existe" in err)
+    rc, _, err = cli("senha", "naoexiste")
+    check("senha: igreja inexistente é recusada", rc == 2 and "não encontrada" in err)
 
 rc, _, err = cli("suspender", "naoexiste", "--sim")
 check("suspender igreja inexistente é recusado", rc == 2 and "não encontrada" in err)
@@ -175,8 +211,8 @@ check("conectado como o papel do app (sem poder de dono), a ferramenta recusa", 
 # ── auditoria ──
 linhas = [json.loads(l) for l in AUDITORIA.read_text(encoding="utf-8").splitlines()]
 acoes = [(l["acao"], l["resultado"]) for l in linhas]
-check("auditoria: criar, suspender, reativar e recusas registrados",
-      ("criar", "ok") in acoes and ("suspender", "ok") in acoes and ("reativar", "ok") in acoes and ("criar", "recusado") in acoes)
+check("auditoria: criar, senha, suspender, reativar e recusas registrados",
+      ("criar", "ok") in acoes and ("senha", "ok") in acoes and ("suspender", "ok") in acoes and ("reativar", "ok") in acoes and ("criar", "recusado") in acoes)
 check("auditoria: cada linha tem quando, quem e ação", all(l.get("quando") and l.get("quem") and l.get("acao") for l in linhas))
 check("auditoria: a senha temporária nunca aparece", senha not in AUDITORIA.read_text(encoding="utf-8"))
 
