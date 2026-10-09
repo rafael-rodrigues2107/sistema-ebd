@@ -388,6 +388,10 @@ class Usuario(PorIgreja, Base):
         ForeignKey("turmas.id", ondelete="SET NULL"), nullable=True
     )
     ativo: Mapped[bool] = mapped_column(default=True)
+    trocar_senha: Mapped[bool] = mapped_column(
+        default=False, server_default="false",
+        comment="senha temporária: o usuário só pode trocar a senha até fazê-lo"
+    )
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     turma: Mapped[Optional["Turma"]] = relationship(lazy="selectin")

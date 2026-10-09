@@ -9,6 +9,7 @@ o papel do app (`ebd_app`) nem tem permissão de gravar em `igrejas`.
     docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py criar --nome "Igreja Batista" --subdominio batista
     docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py suspender batista
     docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py reativar batista
+    docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py senha batista --usuario admin
 
 `criar` gera um admin com SENHA TEMPORÁRIA ALEATÓRIA, mostrada uma única vez (nunca vai para o log).
 Cada ação (inclusive recusas) é registrada em AUDITORIA_DONO_LOG, uma linha JSON por ação.
@@ -211,8 +212,8 @@ async def cmd_criar(args) -> int:
                 text("INSERT INTO configuracao_igreja (nome_igreja, updated_at, igreja_id) VALUES (:n, now(), :i)"),
                 {"n": nome, "i": igreja_id})
             await conn.execute(
-                text("INSERT INTO usuarios (nome, username, senha_hash, role, ativo, created_at, igreja_id) "
-                     "VALUES (:nome, :u, :h, 'admin', true, now(), :i)"),
+                text("INSERT INTO usuarios (nome, username, senha_hash, role, ativo, trocar_senha, created_at, igreja_id) "
+                     "VALUES (:nome, :u, :h, 'admin', true, true, now(), :i)"),
                 {"nome": nome_admin, "u": usuario, "h": hash_senha(senha), "i": igreja_id})
     finally:
         await engine.dispose()
@@ -225,7 +226,7 @@ async def cmd_criar(args) -> int:
         print(f"  endereço: https://{e}")
     print(f"  admin: {usuario}")
     print(f"  SENHA TEMPORÁRIA: {senha}")
-    print("  (mostrada só agora, não fica gravada em lugar nenhum; peça para o admin trocá-la no primeiro acesso)")
+    print("  (mostrada só agora, não fica gravada em lugar nenhum; o sistema exige a troca no primeiro acesso)")
     if sub:
         print(f"  DNS: precisa existir o registro curinga *.{base} (ou um A para {sub}.{base}) apontando para a VPS.")
     if dom:
@@ -294,6 +295,34 @@ async def _mudar_status(args, ativa: bool) -> int:
     return 0
 
 
+async def cmd_senha(args) -> int:
+    """Redefine a senha de um usuário da igreja: nova senha temporária, troca obrigatória no próximo login."""
+    usuario = args.usuario.strip().lower()
+    senha = secrets.token_urlsafe(12)
+    engine = criar_engine()
+    try:
+        async with engine.begin() as conn:
+            await exigir_dono(conn)
+            ig = await achar_igreja(conn, args.igreja)
+            u = (await conn.execute(
+                text("SELECT id, nome, role, ativo FROM usuarios WHERE igreja_id = :i AND lower(username) = :u"),
+                {"i": ig["id"], "u": usuario})).mappings().first()
+            if not u:
+                raise Recusa(f"usuário '{usuario}' não existe na igreja '{ig['nome']}'")
+            await conn.execute(
+                text("UPDATE usuarios SET senha_hash = :h, trocar_senha = true, ativo = true WHERE id = :id"),
+                {"h": hash_senha(senha), "id": u["id"]})
+    finally:
+        await engine.dispose()
+    auditar("senha", "ok", igreja_id=ig["id"], nome=ig["nome"], usuario=usuario, reativou=not u["ativo"])
+    print(f"Senha de '{usuario}' ({u['role']}) em '{ig['nome']}' (id {ig['id']}) redefinida.")
+    print(f"  SENHA TEMPORÁRIA: {senha}")
+    print("  (mostrada só agora; a troca é exigida no próximo login. Sessões já abertas passam a ser barradas.)")
+    if not u["ativo"]:
+        print("  O usuário estava inativo e foi reativado.")
+    return 0
+
+
 async def cmd_suspender(args) -> int:
     return await _mudar_status(args, False)
 
@@ -323,6 +352,11 @@ def montar_parser() -> argparse.ArgumentParser:
     ls.add_argument("--json", action="store_true")
     ls.set_defaults(fn=cmd_listar)
 
+    pw = sub.add_parser("senha", help="redefine a senha de um usuário (temporária, troca obrigatória)")
+    pw.add_argument("igreja", help="id, subdomínio ou domínio próprio")
+    pw.add_argument("--usuario", default="admin", help="login do usuário (padrão: admin)")
+    pw.set_defaults(fn=cmd_senha)
+
     for nome, fn, ajuda in (("suspender", cmd_suspender, "bloqueia o acesso (403) e a emissão de certificado"),
                             ("reativar", cmd_reativar, "devolve o acesso")):
         s = sub.add_parser(nome, help=ajuda)
@@ -339,7 +373,7 @@ def main(argv=None) -> int:
         return asyncio.run(args.fn(args))
     except Recusa as e:
         auditar(args.comando, "recusado", motivo=str(e),
-                **{k: v for k, v in vars(args).items() if k in ("nome", "subdominio", "dominio", "igreja")})
+                **{k: v for k, v in vars(args).items() if k in ("nome", "subdominio", "dominio", "igreja", "usuario")})
         print(f"RECUSADO: {e}", file=sys.stderr)
         return 2
 

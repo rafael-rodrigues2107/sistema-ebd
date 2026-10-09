@@ -1,6 +1,6 @@
-const CACHE = 'ebd-v4';
+const CACHE = 'ebd-v5';
 const STATIC = [
-  '/static/sessao.js?v=1',
+  '/static/sessao.js?v=2',
   '/static/marca.js?v=1',
   '/login.html',
   '/chamada.html',

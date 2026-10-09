@@ -15,9 +15,12 @@ cerca de 150 pontos de consulta ao banco, `create_all` no startup (sem migration
   logo/ícones/manifest/uploads por igreja (`uploads/<igreja_id>/`), login com filtro explícito pela igreja, e o proxy HTTPS
   trocado de nginx+certbot para **Caddy** com certificado automático por domínio de igreja (roteiro em `docs/VIRADA_CADDY.md`).
   Depende de um registro DNS curinga (`*.minhaebd.cloud`) no painel da Hostinger para os subdomínios.
-- Fase 5 (ferramenta do dono): **CLI pronta e testada, ainda não em produção** (`scripts/igrejas.py`; fluxo abaixo). Decisão: CLI
+- Fase 5 (ferramenta do dono): **CLI em produção desde 08/out/2026** (`scripts/igrejas.py`; fluxo abaixo). Decisão: CLI
   primeiro, sem painel web (menor superfície de ataque; o app nem tem permissão de gravar em `igrejas`). Painel web só se o
   volume de igrejas justificar.
+- Fase 5b (senha temporária): **código e testes prontos, ainda não em produção.** Migration `0004` (`usuarios.trocar_senha`),
+  `POST /api/auth/trocar-senha`, página `/trocar-senha.html` e comando `igrejas.py senha`. Convite por e-mail ficou de fora
+  (precisa de serviço de envio e coluna de e-mail; só vale com a segunda igreja pagante).
 - Fase 6: pendente (backup por igreja e restauração individual, exportar/apagar dados de uma igreja, termos e privacidade).
 - Observação: o SQLite não isola igrejas (não tem RLS). O app recusa subir em SQLite com mais de uma igreja.
 
@@ -53,10 +56,16 @@ docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py verificar --sub
 docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py criar --nome "Igreja Batista" --subdominio batista [--dominio exemplo.com.br] [--admin-usuario admin] [--admin-nome "Pastor X"]
 docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py suspender batista   # pede confirmação (ou --sim); aceita id, subdomínio ou domínio
 docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py reativar batista
+docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py senha batista --usuario admin   # redefine: nova senha temporária
 ```
 - `criar` faz tudo numa transação: linha em `igrejas`, `configuracao_igreja` com o nome e o admin com **senha temporária
-  aleatória, exibida uma única vez** (não vai para log nem auditoria). Peça ao admin para trocá-la no primeiro acesso
-  (ainda não há troca obrigatória nem convite por e-mail; `usuarios` não tem e-mail).
+  aleatória, exibida uma única vez** (não vai para log nem auditoria) e `trocar_senha=true`: no primeiro login o sistema
+  leva à tela de troca e responde 403 ("Troca de senha obrigatória") a qualquer outra chamada da API até a senha ser trocada.
+  Não há convite por e-mail (`usuarios` não tem e-mail); o dono repassa a senha temporária por um canal seguro.
+- `senha <igreja> [--usuario admin]`: nova senha temporária (mostrada uma vez), troca obrigatória no próximo login, reativa o
+  usuário se estava inativo e barra as sessões já abertas dele. Registrado na auditoria (sem a senha). Só mexe nesta igreja.
+- A troca (`POST /api/auth/trocar-senha`, qualquer usuário logado): exige a senha atual, mínimo de 8 caracteres e diferente da
+  atual. Senhas que um admin cria ou edita pela tela de usuários NÃO ativam a troca obrigatória (só as do dono).
 - Subdomínio: 3 a 63 caracteres minúsculos `a-z0-9-`, sem hífen no começo/fim nem duplo, fora da lista de reservados
   (www, api, admin, dp, mail, painel, interno, ebd, minhaebd, ...) e não usado. Domínio próprio: normalizado (minúsculas, sem
   `www.`), não pode ser IP nem estar sob o `DOMINIO_BASE` (para isso existe subdomínio).
@@ -66,7 +75,8 @@ docker exec -it sistema-ebd-app-1 python /app/scripts/igrejas.py reativar batist
   do app; `AUDITORIA_DONO_LOG` muda o caminho). Não há remoção de igreja de propósito (fica para a fase 6/LGPD).
 - Depois de `criar` com subdomínio, é preciso existir o DNS curinga `*.minhaebd.cloud` (A -> IP da VPS); sem ele o subdomínio não
   resolve. A primeira visita emite o certificado.
-- Teste: `testes/teste_igrejas_dono.py` (Postgres): CLI real, login pelo Host, isolamento, suspensão/reativação, validações, auditoria.
+- Testes: `testes/teste_igrejas_dono.py` (Postgres): CLI real, login pelo Host, isolamento, suspensão/reativação, validações,
+  senha temporária e auditoria; `testes/teste_senha_temporaria.py` (SQLite e Postgres): o bloqueio e a troca de senha.
 
 ## Decisões de arquitetura
 
